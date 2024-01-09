@@ -15,9 +15,9 @@ const RING_HEADER_PRESENT: u8 = 20;
 const HEADER_PRESENT_INDEX: usize = 28;
 const NO_HEADER_INDEX: usize = 12;
 
-/// # RingType
-/// RingType is an enum representing the type of data stored within a FRIBDAQ ring. This allows
-/// for casting a generic RingItem to its functional type.
+/// RingType is an enum representing the type of data stored within a FRIBDAQ ring.
+///
+/// This allows for casting a generic RingItem to its functional type.
 #[derive(Debug, Clone)]
 pub enum RingType {
     BeginRun,
@@ -44,8 +44,9 @@ impl From<u8> for RingType {
     }
 }
 
-/// # RingItem
-/// RingItem is the base object of FRIBDAQ data. A RingItem contains a buffer of bytes, a size, and a RingType
+/// RingItem is the base object of FRIBDAQ data.
+///
+/// A RingItem contains a buffer of bytes, a size, and a RingType
 /// which can be used to cast the RingItem to its functional type.
 #[derive(Debug, Clone)]
 pub struct RingItem {
@@ -94,9 +95,10 @@ impl RingItem {
     }
 
     /// Remove VMUSB buffer boundaries from the RingItem data buffer.
+    ///
     /// Somtimes physics item data is large enough to run over the VMUSB boundary
-    /// which leaves a word in the item data.
-    /// ## Note
+    /// which leaves an empty word in the item data.
+    /// # Note
     /// Only use this function for PhysicsItems
     pub fn remove_boundaries(&mut self) {
         let mut wlength: u16;
@@ -112,10 +114,9 @@ impl RingItem {
     }
 }
 
-//Below are the various explicit ring item types. RingItems can be cast into these objects using
-//try_from semantics.
+// Below are the various explicit ring item types. RingItems can be cast into these objects using
+// try_from semantics.
 
-/// # BeginRunItem
 /// RingItem which contains the run number, the start time, and the run title
 #[derive(Debug, Clone)]
 pub struct BeginRunItem {
@@ -149,7 +150,6 @@ impl BeginRunItem {
     }
 }
 
-/// # EndRunItem
 /// RingItem which contains the run stop time, and the ellapsed time.
 #[derive(Debug, Clone)]
 pub struct EndRunItem {
@@ -176,7 +176,6 @@ impl EndRunItem {
     }
 }
 
-/// # RunInfo
 /// Simple container for the begin and end run info for ease of use with HDF
 #[derive(Debug, Clone)]
 pub struct RunInfo {
@@ -207,7 +206,6 @@ impl RunInfo {
         )
     }
 }
-/// # ScalersItem
 /// A RingItem which contains the information from the FRIBDAQ scalers, or counters.
 ///
 /// Scalers are composed of a header containing the timing of the scaler data
@@ -266,7 +264,6 @@ impl ScalersItem {
     }
 }
 
-/// # CounterItem
 /// A RingItem which contains the count of the number of physics items found by FRIBDAQ.
 #[derive(Debug, Clone)]
 pub struct CounterItem {
@@ -291,14 +288,13 @@ impl CounterItem {
     }
 }
 
-/// # PhysicsItem
 /// A RingItem which contains the data of the modules read by the VMEUSB controller stack in
 /// FRIBDAQ. It is called Physics because this typically contains the data related to physical observables.
 ///
 /// For now this an ad hoc list that only contains the modules present in the readout not a comprehensive list
 /// of posibilities.
 ///
-/// ## Warning
+/// # Warning
 /// If the VMEUSB stack is modified from the standard AT-TPC layout (the daqconfig.tcl script of FRIBDAQ),
 /// the data will not be unpacked properly.
 #[derive(Debug, Clone)]
@@ -347,8 +343,7 @@ impl PhysicsItem {
     }
 }
 
-/// # SIS3300Item
-/// Struck module SIS3300: 8 channel flash ADC (12 bits)
+/// Item from Struck module SIS3300: 8 channel flash ADC (12 bits)
 #[derive(Debug, Clone)]
 pub struct SIS3300Item {
     pub traces: Vec<Vec<u16>>,
@@ -366,6 +361,7 @@ impl SIS3300Item {
     }
 
     /// Extract the relevant data from the PhysicsItem buffer.
+    ///
     /// This module is fairly nasty to parse. It contains a circular memory element for handling large
     /// data transfers. As such, the start index within the data is somewhat arbitrary.
     pub fn extract_data(
@@ -436,9 +432,9 @@ impl SIS3300Item {
     }
 }
 
-/// # V977Item
-/// CAEN module V977: 16 bit coincidence register
-/// A simple coicidence flag
+/// Item from CAEN module V977: 16 bit coincidence register
+///
+/// A simple coicidence flag buffer
 #[derive(Debug, Clone)]
 pub struct V977Item {
     pub coinc: u16,

@@ -1,3 +1,4 @@
+//! The module containing all of the merging related code
 pub mod asad_stack;
 pub mod config;
 pub mod constants;

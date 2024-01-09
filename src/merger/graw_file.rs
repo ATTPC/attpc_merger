@@ -6,11 +6,13 @@ use super::constants::*;
 use super::error::GrawFileError;
 use super::graw_frame::{FrameMetadata, GrawFrame, GrawFrameHeader};
 
-/// # GrawFile
-/// A .graw file is a raw data file produced by the AGET electronics system. Each graw file is produced by a single AsAd board. Each AsAd board houses 4
+/// A .graw file is a raw data file produced by the AGET electronics system.
+///
+/// Each graw file is produced by a single AsAd board. Each AsAd board houses 4
 /// AGET digitizer components. 4 AsAd's are managed by a single CoBo.
 ///
-/// The functional purpose of the GrawFile is to provide an interface to the underlying binary data, by providing methods which query the metadata (event data) of the next GrawFrame
+/// The functional purpose of the GrawFile is to provide an interface to the underlying binary data,
+/// by providing methods which query the metadata (event data) of the next GrawFrame
 /// (the functional data unit of a GrawFile) as well as retrieving the next GrawFrame.
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -84,21 +86,23 @@ impl GrawFile {
         &self.is_eof
     }
 
-    #[allow(dead_code)]
+    /// Check if the file was succesfully opened
     pub fn is_open(&self) -> &bool {
         &self.is_open
     }
 
-    #[allow(dead_code)]
+    /// Get the associated path on disk
     pub fn get_filename(&self) -> &Path {
         &self.file_path
     }
 
+    /// Get the size of the file in bytes
     pub fn get_size_bytes(&self) -> u64 {
         self.size_bytes
     }
 
     /// Peek at the header of the next frame to extract sizing information or metadata
+    ///
     /// This resets the file stream to the position at the start of the header, as the read of the frame includes
     /// reading the header
     fn get_next_frame_header(&mut self) -> Result<GrawFrameHeader, GrawFileError> {

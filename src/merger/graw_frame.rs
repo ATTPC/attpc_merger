@@ -26,7 +26,7 @@ impl Default for GrawData {
 }
 
 impl GrawData {
-    /// Sanity checks
+    /// Perform checks on the underlying data
     pub fn check_data(&self) -> Result<(), GrawDataError> {
         if self.aget_id > NUMBER_OF_AGETS {
             return Err(GrawDataError::BadAgetID(self.aget_id));
@@ -42,6 +42,7 @@ impl GrawData {
     }
 }
 
+/// Utility to parse the bitset field of the graw header
 fn parse_bitsets(cursor: &mut Cursor<Vec<u8>>) -> Result<Vec<BitVec<u8>>, GrawFrameError> {
     let mut sets: Vec<BitVec<u8>> = Vec::with_capacity(4);
     let mut storage_index: usize;
@@ -59,6 +60,7 @@ fn parse_bitsets(cursor: &mut Cursor<Vec<u8>>) -> Result<Vec<BitVec<u8>>, GrawFr
     return Ok(sets);
 }
 
+/// Utility to parse the mulitplicity field of the graw header
 fn parse_multiplicity(cursor: &mut Cursor<Vec<u8>>) -> Result<Vec<u16>, GrawFrameError> {
     let mut mults: Vec<u16> = Vec::with_capacity(4);
     let mut mult: u16;
@@ -70,7 +72,6 @@ fn parse_multiplicity(cursor: &mut Cursor<Vec<u8>>) -> Result<Vec<u16>, GrawFram
     return Ok(mults);
 }
 
-/// # FrameMetadata
 /// FrameMetadata provides the GrawFile a way of querying the event (hardware-level)
 /// information without accessing the entire frame
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -89,9 +90,9 @@ impl From<GrawFrameHeader> for FrameMetadata {
     }
 }
 
-/// # GrawFrameHeader
-/// GrawFrameHeaders contain the full metadata description of the GrawFrame. They are most commonly used to
-/// know how large the total frame size is
+/// GrawFrameHeaders contain the full metadata description of the GrawFrame.
+///
+/// They are most commonly used to know how large the total frame size is
 #[derive(Debug, Clone, Default)]
 pub struct GrawFrameHeader {
     pub meta_type: u8,   //set to 0x6 ?
@@ -112,7 +113,7 @@ pub struct GrawFrameHeader {
 }
 
 impl GrawFrameHeader {
-    /// Sanity Checks
+    /// Perform consistency checks on the header data, correcting the data if needed
     pub fn check_header(&mut self, buffer_length: u32) -> Result<(), GrawFrameError> {
         if self.meta_type != EXPECTED_META_TYPE {
             return Err(GrawFrameError::IncorrectMetaType(self.meta_type));
@@ -178,10 +179,13 @@ impl GrawFrameHeader {
     }
 }
 
-/// # GrawFrame
-/// A GrawFrame is the basic data chunk of the .graw format. It contains the data from a AsAd on a CoBo for a specific
-/// event. GrawFrames are sized by 256 bit chunking. The header comprises one 256 bit chunks, and the body can contain several 256 bit chunks.
-/// ## Note
+/// A GrawFrame is the basic data chunk of the .graw format.
+///
+/// It contains the data from a AsAd on a CoBo for a specific
+/// event. GrawFrames are sized by 256 bit chunking. The header comprises one 256 bit chunks,
+/// and the body can contain several 256 bit chunks.
+///
+/// # Note
 /// Using 256 bit sizing is interesting because it often results in padding in both the body and the header. (It is done for performance reasons in the acquisition)
 #[derive(Debug)]
 pub struct GrawFrame {
@@ -230,7 +234,8 @@ impl GrawFrame {
         }
     }
 
-    /// Extract the data from the frame body. Idk what partial refers to here. Parsing done in 32-bit data words
+    /// Extract the data from the frame body if the
+    /// DAQ was in Partial-Readout Mode. Parsing done in 32-bit data words
     fn extract_partial_data(
         &mut self,
         cursor: &mut Cursor<Vec<u8>>,
@@ -270,7 +275,8 @@ impl GrawFrame {
         Ok(())
     }
 
-    /// Extract the data from the frame body. Idk what full refers to here. Parsing done in 16-bit data words
+    /// Extract the data from the frame body if the
+    /// DAQ was in Full-Readout Mode. Parsing done in 16-bit data words
     fn extract_full_data(
         &mut self,
         cursor: &mut Cursor<Vec<u8>>,
@@ -299,26 +305,32 @@ impl GrawFrame {
         Ok(())
     }
 
+    /// Alias for masking the AGET chip ID
     fn extract_aget_id(raw_item: &u32) -> u8 {
         ((raw_item & 0xC0000000) >> 30) as u8
     }
 
+    /// Alias for masking the AGET channel ID
     fn extract_channel(raw_item: &u32) -> u8 {
         ((raw_item & 0x3F800000) >> 23) as u8
     }
 
+    /// Alias for masking the AGET sample timebucket ID
     fn extract_time_bucket_id(raw_item: &u32) -> u16 {
         ((raw_item & 0x007FC000) >> 14) as u16
     }
 
+    /// Alias for masking the AGET sample value
     fn extract_sample(raw_item: &u32) -> i16 {
         (raw_item & 0x00000FFF) as i16
     }
 
+    /// Alias for masking the AGET chip ID in Full-Readout
     fn extract_aget_id_full(raw_item: &u16) -> u8 {
         ((raw_item & 0xC000) >> 14) as u8
     }
 
+    /// Alias for masking the AGET sample value in Full-Readout
     fn extract_sample_full(raw_item: &u16) -> i16 {
         (raw_item & 0x0FFF) as i16
     }

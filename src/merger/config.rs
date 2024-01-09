@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 
 use super::error::ConfigError;
 
-/// # Config
 /// Structure representing the application configuration. Contains pathing and run information
 /// Configs are seralizable and deserializable to YAML using serde and serde_yaml
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +19,7 @@ pub struct Config {
 
 impl Config {
     #[allow(dead_code)]
+    /// Generate a new Config object. All fields will be empty/invalid
     pub fn default() -> Self {
         Self {
             graw_path: PathBuf::from("None"),
@@ -34,6 +34,7 @@ impl Config {
     }
 
     /// Read the configuration in a YAML file
+    /// Returns a Config if successful
     pub fn read_config_file(config_path: &Path) -> Result<Self, ConfigError> {
         if !config_path.exists() {
             return Err(ConfigError::BadFilePath(config_path.to_path_buf()));
@@ -44,6 +45,7 @@ impl Config {
         Ok(serde_yaml::from_str::<Self>(&yaml_str)?)
     }
 
+    /// Check if a specific run exists by evaluating the existance of *both* FRIBDAQ data and GET DAQ data
     pub fn does_run_exist(&self, run_number: i32) -> bool {
         let run_dir: PathBuf = self.graw_path.join(self.get_run_str(run_number));
         let evt_dir: PathBuf = self.evt_path.join(format!("run{}", run_number));
@@ -55,7 +57,7 @@ impl Config {
         }
     }
 
-    /// Construct the run directory
+    /// Get the Path to a run file
     pub fn get_run_directory(&self, run_number: i32, cobo: &u8) -> Result<PathBuf, ConfigError> {
         let mut run_dir: PathBuf = self.graw_path.join(self.get_run_str(run_number));
         run_dir = run_dir.join(format!("mm{}", cobo));
@@ -66,7 +68,7 @@ impl Config {
         }
     }
 
-    /// Construct the online directory
+    /// Get the path to the online data, assuming the standard AT-TPC Server configuration
     pub fn get_online_directory(&self, run_number: i32, cobo: &u8) -> Result<PathBuf, ConfigError> {
         let mut online_dir: PathBuf = PathBuf::new().join(format!("/Volumes/mm{}", cobo));
         online_dir = online_dir.join(format!("{}", self.experiment));
@@ -78,7 +80,7 @@ impl Config {
         }
     }
 
-    /// Construct the evt file name
+    /// Get the path to the FRIBDAQ directory, assuming the standard AT-TPC configuration
     pub fn get_evt_directory(&self, run_number: i32) -> Result<PathBuf, ConfigError> {
         let run_dir: PathBuf = self.evt_path.join(format!("run{}", run_number));
         if run_dir.exists() {
@@ -88,7 +90,7 @@ impl Config {
         }
     }
 
-    /// Construct the HDF5 file name
+    /// Get the path to the output hdf5 file
     pub fn get_hdf_file_name(&self, run_number: i32) -> Result<PathBuf, ConfigError> {
         let hdf_file_path: PathBuf = self
             .hdf_path

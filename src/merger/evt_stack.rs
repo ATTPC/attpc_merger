@@ -5,6 +5,10 @@ use super::ring_item::RingItem;
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 
+/// Similar to AsadStack, we have EvtStacks for the FRIBDAQ data.
+///
+/// FRIBDAQ .evt files are split every 2.0GB for legacy reasons. The stack is the
+/// collection of all files associated with a given run in the FRIBDAQ system.
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct EvtStack {
@@ -16,6 +20,7 @@ pub struct EvtStack {
 }
 
 impl EvtStack {
+    /// Create a new EvtStack for a given FRIBDAQ run directory
     pub fn new(path: &Path) -> Result<Self, EvtStackError> {
         let (mut stack, bytes) = Self::get_file_stack(path)?;
         if let Some(file_path) = stack.pop_front() {
@@ -31,6 +36,10 @@ impl EvtStack {
         }
     }
 
+    /// Get the next ring item in the file stack
+    ///
+    /// Returns a `Result<Option<RingItem>>`. The Option is None if the stack has
+    /// no more data.
     pub fn get_next_ring_item(&mut self) -> Result<Option<RingItem>, EvtStackError> {
         loop {
             if self.is_ended {
@@ -47,6 +56,7 @@ impl EvtStack {
         }
     }
 
+    /// Get all of the associated .evt files and put them in the stack
     fn get_file_stack(parent_path: &Path) -> Result<(VecDeque<PathBuf>, u64), EvtStackError> {
         let stack: VecDeque<PathBuf>;
         let mut file_list: Vec<PathBuf> = Vec::new();

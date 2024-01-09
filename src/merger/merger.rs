@@ -8,7 +8,8 @@ use super::config::Config;
 use super::error::MergerError;
 use super::graw_frame::GrawFrame;
 
-/// # Merger
+/// The object which merges all of the data from individual .graw files into a single data stream.
+///
 /// Merger essentially performs a merge-sort operation on the data files, taking all of the separate
 /// data from the .graw files and zipping them into a single data stream which is sorted in time.
 /// Currently uses EventID to decide the time of a frame, not the timestamp.
@@ -61,8 +62,11 @@ impl Merger {
         Ok(merger)
     }
 
-    /// Asks the stacks for the next frame. Which ever stack has the earliest event, returns its frame.
-    /// Returns Result<Option<GrawFrame>>. If the Option is None, that means that there is no more data to be read from the stacks
+    /// Asks the stacks for the next frame.
+    ///
+    /// Which ever stack has the earliest event, returns its frame.
+    /// Returns `Result<Option<GrawFrame>>`. If the Option is None, that
+    /// means that there is no more data to be read from the stacks
     pub fn get_next_frame(&mut self) -> Result<Option<GrawFrame>, MergerError> {
         let mut earliest_event_index: Option<(usize, u32)> = Option::None;
         for (idx, stack) in self.file_stacks.iter_mut().enumerate() {
@@ -97,6 +101,7 @@ impl Merger {
         &self.total_data_size_bytes
     }
 
+    /// Get an immutable reference to the underlying file stacks
     pub fn get_file_stacks(&self) -> &Vec<AsadStack> {
         &self.file_stacks
     }
