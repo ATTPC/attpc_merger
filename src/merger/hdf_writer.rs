@@ -14,9 +14,10 @@ const FRIB_NAME: &str = "frib";
 const EVT_NAME: &str = "evt";
 const SCALER_NAME: &str = "scaler";
 
-/// # HDFWriter
-/// A simple struct which wraps around the hdf5-rust library. Opens a file for writing and
-/// can write Events.
+/// A simple struct which wraps around the hdf5-rust library.
+///
+/// Opens an HDF5 file for writing merged Events. Currently writes
+/// in the standard AT-TPC HDF5 format.
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct HDFWriter {

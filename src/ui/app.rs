@@ -9,8 +9,9 @@ use eframe::egui::{Color32, RichText};
 use crate::merger::config::Config;
 use crate::merger::error::ProcessorError;
 
-/// # MergerApp
-/// The UI app which inherits the eframe::App trait. The parent for all processing.
+/// The UI app which inherits the eframe::App trait.
+///
+/// The parent for all processing.
 #[derive(Debug)]
 pub struct MergerApp {
     progress: Arc<Mutex<f32>>, //progress bar updating
@@ -19,7 +20,7 @@ pub struct MergerApp {
 }
 
 impl MergerApp {
-    /// Startup the application
+    /// Create the application
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         MergerApp {
             progress: Arc::new(Mutex::new(0.0)),
@@ -60,6 +61,7 @@ impl MergerApp {
         }
     }
 
+    /// Write the current Config to a file
     fn write_config(&self, path: &Path) {
         if let Ok(mut conf_file) = File::create(path) {
             match serde_yaml::to_string(&self.config) {
@@ -77,6 +79,7 @@ impl MergerApp {
         }
     }
 
+    /// Read the Config from a file
     fn read_config(&mut self, path: &Path) {
         match Config::read_config_file(path) {
             Ok(conf) => self.config = conf,

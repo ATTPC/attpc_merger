@@ -8,12 +8,11 @@ use byteorder::ReadBytesExt;
 use super::error::EvtFileError;
 use super::ring_item::RingItem;
 
-/// # EvtFile
-/// .evt files contain the data recorded by the FRIB DAQ system.
+/// Representation .evt files contain the data recorded by the FRIB DAQ system.
+///
 /// The data is atomic in RingItems that contain various types of data.
 /// These RingItems can then be cast to functional types which parse the binary buffer
 /// and allow the data to be accessed.
-
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct EvtFile {
@@ -45,11 +44,15 @@ impl EvtFile {
         })
     }
 
+    /// Check if the file is still alive
     pub fn is_eof(&self) -> bool {
         return self.is_eof;
     }
 
-    /// Retrieve the next RingItem from the buffer. Returns a Result<RingItem>.
+    /// Retrieve the next RingItem from the buffer.
+    ///
+    /// Returns a `Result<RingItem>`. The RingItem can then be cast to
+    /// the appropriate usable type.
     pub fn get_next_item(&mut self) -> Result<RingItem, EvtFileError> {
         //First need to query the size of the next ring item.
         let current_position: u64 = self.file_handle.stream_position()?;

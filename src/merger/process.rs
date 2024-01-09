@@ -73,8 +73,9 @@ fn process_evt_data(evt_path: PathBuf, writer: &HDFWriter) -> Result<(), Process
     Ok(())
 }
 
-/// The main loop of rusted_graw. This takes in a config (and progress monitor) and preforms the merging
-/// logic on the recieved data.
+/// The main loop of rusted_graw.
+///
+/// This takes in a config (and progress monitor) and preforms the merging logic on the recieved data.
 pub fn process_run(
     config: &Config,
     run_number: i32,
@@ -140,6 +141,9 @@ pub fn process_run(
     return Ok(());
 }
 
+/// The function to be called by a separate thread (typically the UI).
+///
+/// Allows multiple runs to be processed
 pub fn process(config: Config, progress: Arc<Mutex<f32>>) -> Result<(), ProcessorError> {
     for run in config.first_run_number..(config.last_run_number + 1) {
         if let Ok(mut bar) = progress.lock() {

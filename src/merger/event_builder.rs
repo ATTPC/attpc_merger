@@ -3,8 +3,10 @@ use super::event::Event;
 use super::graw_frame::GrawFrame;
 use super::pad_map::PadMap;
 
-/// # EventBuilder
 /// EventBuilder takes GrawFrames and composes them into Events.
+///
+/// The EventBuilder recieves data from the Merger and constructs an Event struct. The
+/// Event struct can then be sent to an HDFWriter to write merged events to disk.
 #[derive(Debug)]
 pub struct EventBuilder {
     current_event_id: u32,
@@ -13,7 +15,9 @@ pub struct EventBuilder {
 }
 
 impl EventBuilder {
-    /// Create a new EventBuilder. Requires a PadMap
+    /// Create a new EventBuilder.
+    ///
+    /// Requires a PadMap
     pub fn new(pad_map: PadMap) -> Self {
         EventBuilder {
             current_event_id: 0,
@@ -22,9 +26,11 @@ impl EventBuilder {
         }
     }
 
-    /// Add a frame to the event. If the frame does not have the same EventID as the event currently being built,
+    /// Add a frame to the event.
+    ///
+    /// If the frame does not have the same EventID as the event currently being built,
     /// this is taken as indication that that event is complete, and a new event should be started for the frame given.
-    /// Returns a Result<Option<Event>>. If the Option is None, the event being built is not complete. If the Optiion is Some,
+    /// Returns a `Result<Option<Event>>`. If the Option is None, the event being built is not complete. If the Optiion is Some,
     /// the event being built was completed, and a new event was started for the frame that was passed in.
     pub fn append_frame(&mut self, frame: GrawFrame) -> Result<Option<Event>, EventBuilderError> {
         if frame.header.event_id > self.current_event_id && self.current_event_id != 0 {
@@ -53,7 +59,9 @@ impl EventBuilder {
         }
     }
 
-    /// Takes any remaining frames and flushes them to an event. Used at the end of processing a run.
+    /// Takes any remaining frames and flushes them to an event.
+    ///
+    /// Used at the end of processing a run.
     /// Returns None if there were no frames left over.
     pub fn flush_final_event(&mut self) -> Option<Event> {
         if self.frame_stack.len() != 0 {

@@ -5,8 +5,8 @@ use super::error::{AsadStackError, GrawFileError};
 use super::graw_file::GrawFile;
 use super::graw_frame::{FrameMetadata, GrawFrame};
 
-/// # AsadStack
 /// AsadStack is representation of all of the files for a specific AsAd in a specific CoBo.
+///
 /// Data from the AT-TPC DAQ is written to files on a per AsAd-CoBo basis (each AsAd-CoBo gets its own file to write to).
 /// These files are then split at approximately 1GB. This means that for a given run there can be many files for a given AsAd-CoBo.
 /// AsadStack searches through the run directory structure and finds all files associated with with that specific AsAd-CoBo, sorts the files,
@@ -35,11 +35,8 @@ impl AsadStack {
         cobo_number: i32,
         asad_number: i32,
     ) -> Result<Self, AsadStackError> {
-        //        let parent_path = data_path.join(format!("mm{}", cobo_number)); //Each cobo gets its own MacMini (hence mm) and therefore its own directory
-        let parent_path = data_path.join("");
-
         let (mut file_stack, total_stack_size_bytes) =
-            Self::get_file_stack(&parent_path, &cobo_number, &asad_number)?;
+            Self::get_file_stack(&data_path, &cobo_number, &asad_number)?;
         if let Some(path) = file_stack.pop_front() {
             //Activate the first file
             Ok(AsadStack {
@@ -47,7 +44,7 @@ impl AsadStack {
                 file_stack,
                 cobo_number,
                 asad_number,
-                parent_path,
+                parent_path: data_path.into(),
                 total_stack_size_bytes,
                 is_ended: false,
             })
@@ -56,11 +53,12 @@ impl AsadStack {
         }
     }
 
-    /// Query the active file for the next frame's metadata. If there is nothing left to read, the stack
-    /// attempts to move to the next file. Returns a Result<Option<FrameMetadata>>. If the Option is None,
-    /// the stack has run out of data.
+    /// Query the active file for the next frame's metadata.
     ///
-    /// # IMPORTANT
+    /// If there is nothing left to read, the stack attempts to move to the next file.
+    /// Returns a `Result<Option<FrameMetadata>>`. If the Option is None, the stack has run out of data.
+    ///
+    /// # Important
     /// The metadata for the next frame should *always* be queried before attempting to retrieve the next frame.
     /// The get_next_frame will not attempt to move to the next file in the stack and will simply return an error if there is
     /// no more data in the active file.
@@ -82,7 +80,7 @@ impl AsadStack {
 
     /// Get the next GrawFrame from the active file.
     ///
-    /// # IMPORTANT
+    /// # Important
     /// The metadata for the next frame should *always* be queried before attempting to retrieve the next frame.
     /// The get_next_frame will not attempt to move to the next file in the stack and will simply return an error if there is
     /// no more data in the active file.
@@ -95,18 +93,22 @@ impl AsadStack {
         &self.total_stack_size_bytes
     }
 
+    /// Get the CoBo id number for this stack
     pub fn get_cobo_number(&self) -> &i32 {
         &self.cobo_number
     }
 
+    /// Get the AsAd id number for this stack
     pub fn get_asad_number(&self) -> &i32 {
         &self.asad_number
     }
 
+    /// Get an immutable reference to the underlying file stack
     pub fn get_file_stack_ref(&self) -> &VecDeque<PathBuf> {
         &self.file_stack
     }
 
+    /// Get an immutable reference to the current active file
     pub fn get_active_file(&self) -> &GrawFile {
         &self.active_file
     }
@@ -116,8 +118,10 @@ impl AsadStack {
         !self.is_ended
     }
 
-    /// Go get the files
-    pub fn get_file_stack(
+    /// Load the file stack
+    ///
+    /// Search the associated directory for the appropriate .graw files
+    fn get_file_stack(
         parent_path: &Path,
         cobo_number: &i32,
         asad_number: &i32,
@@ -149,6 +153,8 @@ impl AsadStack {
     }
 
     /// Move to the next file in the stack
+    ///
+    /// If there are no more files in the stack, the is_ended flag is set
     fn move_to_next_file(&mut self) -> Result<(), AsadStackError> {
         loop {
             if let Some(next_file_path) = self.file_stack.pop_front() {

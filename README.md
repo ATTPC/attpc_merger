@@ -54,9 +54,8 @@ Using the Open buttons next to the directory/file fields will bring up a file di
 
 ### Online
 
-The rusted_graw UI additionally contains a button for toggling online mode. When toggled on, this changes the 
-interpretation of the various paths to match the behavior of the AT-TPC DAQ network. Only use this if you
-know what you're doing.
+The rusted_graw UI additionally contains a button for toggling online mode. When toggled on, this changes the
+interpretation of the various paths to match the behavior of the AT-TPC DAQ network.
 
 ## Output
 
@@ -65,6 +64,7 @@ rusted_graw will output two files: the final resulting HDF5 data file, and a log
 ### HDF5 Data Format
 
 The data format used in the HDF5 data is as follows:
+
 - All FRIBDAQ data is within the Group "frib"
 - FRIBDAQ Physics items are stored in the "evt" group
 - FRIBDAQ Scaler items are stored in the "scaler" group
@@ -75,7 +75,3 @@ The data format used in the HDF5 data is as follows:
 - Traces are stored in random order. That is, the Dataset matrix rows are not sorted by electronic address.
 
 Meta data can be found in many places. This will be cleaned up in future versions.
-
-### Trace Analysis
-
-As with its predecesor, rusted_graw does some basic analysis on the traces before writing them to disk by subtracting the fixed-pattern noise from the traces. Each AGET has four channels (11, 22, 45, 56) dedicated to measuring "fixed-pattern noise" (FPN). The traces from these four channels is averaged and baseline corrected. This averaged, corrected signal is then subtracted from every other trace present in that particular AGET, removing that noise pattern. These FPN channels are then removed from the dataset.
