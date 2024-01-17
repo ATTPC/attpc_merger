@@ -15,12 +15,15 @@ concurrency:
 jobs:
     build:
         name: Build Docs
-        runs-on: ubuntu-latest
+        runs-on: macos-latest
         steps:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Update Rust
               run: rustup update stable
+            - name: Install HDF5
+              run: |
+                brew install hdf5
             - name: Generate Docs
               run: cargo doc --no-deps
             - name: Add Redirect
@@ -38,7 +41,7 @@ jobs:
         environment:
             name: github-pages
             url: ${{ steps.deployment.outputs.page_url }}
-        runs-on: ubuntu-latest
+        runs-on: macos-latest
         needs: build
         steps:
             - name: Deploy to GitHub pages
