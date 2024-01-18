@@ -372,6 +372,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "attpc_merger"
+version = "1.0.0"
+dependencies = [
+ "bit-set",
+ "bitvec",
+ "byteorder",
+ "eframe",
+ "fxhash",
+ "hdf5",
+ "human_bytes",
+ "log",
+ "native-dialog",
+ "ndarray",
+ "serde",
+ "serde_derive",
+ "serde_yaml",
+ "simplelog",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2130,26 +2150,6 @@ name = "regex-syntax"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "436b050e76ed2903236f032a59761c1eb99e1b0aead2c257922771dab1fc8c78"
-
-[[package]]
-name = "rusted_graw"
-version = "1.0.0"
-dependencies = [
- "bit-set",
- "bitvec",
- "byteorder",
- "eframe",
- "fxhash",
- "hdf5",
- "human_bytes",
- "log",
- "native-dialog",
- "ndarray",
- "serde",
- "serde_derive",
- "serde_yaml",
- "simplelog",
-]
 
 [[package]]
 name = "rustix"
