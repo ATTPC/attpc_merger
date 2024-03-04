@@ -45,16 +45,15 @@ impl Config {
         Ok(serde_yaml::from_str::<Self>(&yaml_str)?)
     }
 
-    /// Check if a specific run exists by evaluating the existance of *both* FRIBDAQ data and GET DAQ data
+    /// Check if a specific run exists by evaluating the existance of GET DAQ data
+    /// FRIBDAQ data is optional
     pub fn does_run_exist(&self, run_number: i32) -> bool {
         let run_dir: PathBuf = self.graw_path.join(self.get_run_str(run_number));
-        let evt_dir: PathBuf = self.evt_path.join(format!("run{}", run_number));
         if self.online {
             // Don't check run_dir if online
-            return evt_dir.exists();
-        } else {
-            return run_dir.exists() && evt_dir.exists();
+            return true;
         }
+        run_dir.exists()
     }
 
     /// Get the Path to a run file
