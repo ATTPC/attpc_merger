@@ -1,5 +1,5 @@
 [package]
-name = "rusted_graw"
+name = "attpc_merger"
 version = "1.0.0"
 edition = "2021"
 
@@ -16,7 +16,7 @@ human_bytes = "0.4.3"
 log = "0.4.20"
 native-dialog = { version = "0.7.0", features = ["windows_dpi_awareness"] }
 ndarray = "0.15.6"
-serde = "1.0.195"
+serde = "1.0.196"
 serde_derive = "1.0.166"
-serde_yaml = "0.9.30"
+serde_yaml = "0.9.32"
 simplelog = "0.12.1"

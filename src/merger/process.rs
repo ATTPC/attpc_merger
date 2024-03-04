@@ -73,7 +73,7 @@ fn process_evt_data(evt_path: PathBuf, writer: &HDFWriter) -> Result<(), Process
     Ok(())
 }
 
-/// The main loop of rusted_graw.
+/// The main loop of attpc_merger.
 ///
 /// This takes in a config (and progress monitor) and preforms the merging logic on the recieved data.
 pub fn process_run(
