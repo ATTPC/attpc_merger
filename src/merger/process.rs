@@ -81,7 +81,6 @@ pub fn process_run(
     run_number: i32,
     progress: Arc<Mutex<f32>>,
 ) -> Result<(), ProcessorError> {
-    let evt_path = config.get_evt_directory(run_number)?;
     let hdf_path = config.get_hdf_file_name(run_number)?;
     let pad_map = PadMap::new(&config.pad_map_path)?;
 
@@ -99,10 +98,22 @@ pub fn process_run(
     let mut count = 0;
     let flush_val = (*total_data_size as f64 * flush_frac as f64) as u64;
 
-    //Handle the evt data
-    log::info!("Now processing evt data...");
-    process_evt_data(evt_path, &writer)?;
-    log::info!("Done with evt data.");
+    // Handle evt data if present
+    match config.get_evt_directory(run_number) {
+        Ok(evt_path) => {
+            log::info!("Now processing evt data...");
+            match process_evt_data(evt_path, &writer) {
+                Ok(_) => log::info!("Done with evt data."),
+                Err(e) => {
+                    log::warn!("Error while processing evt data: {e}\nSkipping evt processing.")
+                }
+            }
+        }
+        Err(e) => {
+            log::warn!("Could not access evt directory: {e}");
+            log::warn!("Skipping processing evt data...");
+        }
+    }
 
     //Handle the get data
     log::info!("Processing get data...");
