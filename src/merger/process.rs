@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use crate::merger::ring_item::{
-    BeginRunItem, CounterItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem,
+    BeginRunItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem,
 };
 
 use super::config::Config;
@@ -32,7 +32,7 @@ fn process_evt_data(evt_path: PathBuf, writer: &HDFWriter) -> Result<(), Process
     let mut evt_stack = EvtStack::new(&evt_path)?; // open evt file
     let mut run_info = RunInfo::new();
     let mut scaler_counter: u32 = 0;
-    let mut event_counter = CounterItem::new();
+    let mut event_counter: u64 = 0;
     loop {
         if let Some(mut ring) = evt_stack.get_next_ring_item()? {
             match ring.ring_type {
@@ -58,12 +58,10 @@ fn process_evt_data(evt_path: PathBuf, writer: &HDFWriter) -> Result<(), Process
                 RingType::Physics => {
                     // Physics data
                     ring.remove_boundaries(); // physics event often cross VMUSB buffer boundary
-                    writer.write_physics(PhysicsItem::try_from(ring)?, &event_counter.count)?;
-                    event_counter.count += 1;
+                    writer.write_physics(PhysicsItem::try_from(ring)?, &event_counter)?;
+                    event_counter += 1;
                 }
-                RingType::Counter => {
-                    event_counter = CounterItem::try_from(ring)?;
-                }
+                RingType::Counter => (), // Unused, old that could cause many errors
                 _ => log::info!("Unrecognized ring type: {}", ring.bytes[4]),
             }
         } else {
