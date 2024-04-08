@@ -9,7 +9,7 @@ edition = "2021"
 bit-set = "0.5.3"
 bitvec = "1.0.1"
 byteorder = "1.5.0"
-eframe = "0.26.2"
+eframe = "0.27.2"
 fxhash = "0.2.1"
 hdf5 = { git = "https://github.com/aldanor/hdf5-rust.git" }
 human_bytes = "0.4.3"
