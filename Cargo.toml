@@ -13,7 +13,7 @@ eframe = "0.27.2"
 fxhash = "0.2.1"
 hdf5 = { git = "https://github.com/aldanor/hdf5-rust.git" }
 human_bytes = "0.4.3"
-log = "0.4.21"
+log = "0.4.22"
 native-dialog = { version = "0.7.0", features = ["windows_dpi_awareness"] }
 ndarray = "0.15.6"
 serde = { version = "1.0.202", features = ["derive"] }
