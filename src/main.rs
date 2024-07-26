@@ -101,7 +101,7 @@ fn main() {
     match eframe::run_native(
         "attpc_merger",
         native_options,
-        Box::new(|cc| Box::new(MergerApp::new(cc))),
+        Box::new(|cc| Ok(Box::new(MergerApp::new(cc)))),
     ) {
         Ok(()) => (),
         Err(e) => log::error!("Eframe error: {}", e),
