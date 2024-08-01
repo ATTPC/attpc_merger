@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "libattpc_merger",
-    "attpc_merger",
+    "attpc_merger", 
+    "attpc_merger_cli",
 ]
 resolver="2"
 
