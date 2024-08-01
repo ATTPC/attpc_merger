@@ -1,22 +1,9 @@
-[package]
-name = "attpc_merger"
-version = "1.0.0"
-edition = "2021"
+[workspace]
+members = [
+    "libattpc_merger",
+    "attpc_merger",
+]
+resolver="2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[dependencies]
-bit-set = "0.8.0"
-bitvec = "1.0.1"
-byteorder = "1.5.0"
-eframe = "0.28.1"
-fxhash = "0.2.1"
-hdf5 = { git = "https://github.com/aldanor/hdf5-rust.git" }
-human_bytes = "0.4.3"
-log = "0.4.22"
-native-dialog = { version = "0.7.0", features = ["windows_dpi_awareness"] }
-ndarray = "0.15.6"
-serde = { version = "1.0.204", features = ["derive"] }
-serde_yaml = "0.9.34"
-simplelog = "0.12.2"
-time = "0.3.36"

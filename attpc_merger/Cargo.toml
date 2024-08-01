@@ -1,0 +1,13 @@
+[package]
+name="attpc_merger"
+version="2.0.0"
+edition="2021"
+
+[dependencies]
+libattpc_merger = { path = "../libattpc_merger" }
+eframe = "0.28.1"
+native-dialog = { version = "0.7.0", features = ["windows_dpi_awareness"] }
+log = "0.4.22"
+simplelog = "0.12.2"
+serde = { version = "1.0.204", features = ["derive"] }
+serde_yaml = "0.9.34"

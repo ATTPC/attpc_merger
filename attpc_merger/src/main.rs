@@ -77,10 +77,8 @@
 //!
 //! Meta data can be found in many places. This will be cleaned up in future versions.
 
-mod merger;
-mod ui;
-
-use ui::app::MergerApp;
+mod app;
+use app::MergerApp;
 
 /// The program entry point
 #[allow(unreachable_code, dead_code)]

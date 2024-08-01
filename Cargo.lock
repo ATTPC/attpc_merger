@@ -441,22 +441,15 @@ dependencies = [
 
 [[package]]
 name = "attpc_merger"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
- "bit-set 0.8.0",
- "bitvec",
- "byteorder",
  "eframe",
- "fxhash",
- "hdf5",
- "human_bytes",
+ "libattpc_merger",
  "log",
  "native-dialog",
- "ndarray",
  "serde",
  "serde_yaml",
  "simplelog",
- "time",
 ]
 
 [[package]]
@@ -1785,6 +1778,24 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+
+[[package]]
+name = "libattpc_merger"
+version = "2.0.0"
+dependencies = [
+ "bit-set 0.8.0",
+ "bitvec",
+ "byteorder",
+ "fxhash",
+ "hdf5",
+ "human_bytes",
+ "log",
+ "ndarray",
+ "serde",
+ "serde_yaml",
+ "simplelog",
+ "time",
+]
 
 [[package]]
 name = "libc"
