@@ -5,3 +5,12 @@
 .vscode/
 .vs/
 .DS_Store
+*.yml
+*.json
+*.png
+*.jpg
+*.h5
+*.hdf5
+*.graw
+*.GRAW
+*.evt

@@ -6,8 +6,9 @@ use std::thread::JoinHandle;
 
 use eframe::egui::{Color32, RichText};
 
-use crate::merger::config::Config;
-use crate::merger::error::ProcessorError;
+use libattpc_merger::config::Config;
+use libattpc_merger::error::ProcessorError;
+use libattpc_merger::process::process;
 
 /// The UI app which inherits the eframe::App trait.
 ///
@@ -40,9 +41,7 @@ impl MergerApp {
                 println!("Sync error! Progress could not be reset!");
             }
 
-            self.worker = Some(std::thread::spawn(|| {
-                crate::merger::process::process(conf, prog)
-            }))
+            self.worker = Some(std::thread::spawn(|| process(conf, prog)))
         }
     }
 

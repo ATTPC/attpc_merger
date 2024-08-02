@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use crate::merger::ring_item::{
+use super::ring_item::{
     BeginRunItem, CounterItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem,
 };
 

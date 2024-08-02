@@ -1,0 +1,22 @@
+[package]
+name="libattpc_merger"
+readme="README.md"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+bit-set.workspace = true
+bitvec.workspace = true
+byteorder.workspace = true
+fxhash.workspace = true
+hdf5.workspace = true
+human_bytes.workspace = true
+log.workspace = true
+ndarray.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+simplelog.workspace = true
+time.workspace = true
