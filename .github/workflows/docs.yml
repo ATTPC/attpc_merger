@@ -23,9 +23,9 @@ jobs:
               run: |
                 brew install hdf5
             - name: Generate Docs
-              run: cargo doc --no-deps
+              run: cargo doc --no-deps --lib
             - name: Add Redirect
-              run: echo '<meta http-equiv="refresh" content="0;url=attpc_merger/index.html">' > target/doc/index.html
+              run: echo '<meta http-equiv="refresh" content="0;url=libattpc_merger/index.html">' > target/doc/index.html
             - name: Remove lock file
               run: rm target/doc/.lock
             - name: Upload artifact
