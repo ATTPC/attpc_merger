@@ -1,13 +1,17 @@
 [package]
 name="attpc_merger"
-version="2.0.0"
-edition="2021"
+readme="README.md"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+authors.workspace = true
 
 [dependencies]
-libattpc_merger = { path = "../libattpc_merger" }
+libattpc_merger.workspace = true
 eframe = "0.28.1"
 native-dialog = { version = "0.7.0", features = ["windows_dpi_awareness"] }
-log = "0.4.22"
-simplelog = "0.12.2"
-serde = { version = "1.0.204", features = ["derive"] }
-serde_yaml = "0.9.34"
+log.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+simplelog.workspace = true
