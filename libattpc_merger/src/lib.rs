@@ -69,23 +69,14 @@
 //!
 //! ```text
 //! run_0001.h5
-//! |---- get (Group)
-//! |    |---- evt#_data (Dataset: Matrix of traces, row(len=517) = [cobo, asad, aget, channel, pad, 5-516 trace])
-//! |    |---- evt#_header (Dataset: [event_id, timestamp, other_timestamp])
-//! |---- frib (Group)
-//! |    |---- runinfo (Dataset: [run_number, start_time, stop_time, ellapsed_time])
-//! |    |---- title (Dataset: run title)
-//! |    |---- evt (Group)
-//! |    |    |---- evt#_header (Dataset: [event_id, timestamp])
-//! |    |    |---- evt#_977 (Dataset: [coincidence])
-//! |    |    |---- evt#_1903 (Dataset: Matrix of traces, each row is a trace of lengthmodule samples)
-//! |    |---- scaler (Group)
-//! |    |    |---- scaler#_header (Dataset: [start_offset, stop_offset, timestamp, n_scalers, incremental])
-//! |    |    |---- scaler#_data (Dataset: [scaler values])
-//! |---- meta
-//! |    |---- meta (Dataset: [first_event, first_time, last_event, last_time])
-//! |    |---- cobo#_asad#_files (Dataset: [file names])
-//! |    |---- cobo#_asad#_length (Dataset: [file lengths])
+//! |---- events - min_event, max_event, min_get_ts, max_get_ts, frib_run, frib_start, frib_stop, frib_time, version
+//! |    |---- event_#
+//! |    |    |---- get_traces(dset) - id, timestamp, timestamp_other
+//! |    |    |---- frib_physics - id, timestamp
+//! |    |    |    |---- 907(dset)
+//! |    |    |    |---- 1903(dset)
+//! |    scalers - min_event, max_event
+//! |    |---- event_#(dset) - start_offset, stop_offset, timestamp, incremental
 //! ```
 pub mod asad_stack;
 pub mod config;
