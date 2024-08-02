@@ -252,16 +252,17 @@ impl ScalersItem {
         }
     }
 
-    /// Temporary. Used to convert metadata to a single array.
-    pub fn get_header_array(&self) -> Vec<u32> {
-        vec![
-            self.start_offset,
-            self.stop_offset,
-            self.timestamp,
-            self.data.len() as u32,
-            self.incremental,
-        ]
-    }
+    // Temporary. Used to convert metadata to a single array.
+    // Now unused
+    // pub fn get_header_array(&self) -> Vec<u32> {
+    //     vec![
+    //         self.start_offset,
+    //         self.stop_offset,
+    //         self.timestamp,
+    //         self.data.len() as u32,
+    //         self.incremental,
+    //     ]
+    // }
 }
 
 /// A RingItem which contains the count of the number of physics items found by FRIBDAQ.
@@ -337,10 +338,11 @@ impl PhysicsItem {
         }
     }
 
-    /// Temporary. Used to convert metadata to a single array.
-    pub fn get_header_array(&self) -> Vec<u32> {
-        return vec![self.event, self.timestamp];
-    }
+    // Temporary. Used to convert metadata to a single array.
+    // Now unused
+    // pub fn get_header_array(&self) -> Vec<u32> {
+    //     return vec![self.event, self.timestamp];
+    // }
 }
 
 /// Item from Struck module SIS3300: 8 channel flash ADC (12 bits)
