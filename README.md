@@ -1,4 +1,6 @@
 # attpc_merger
+![CI](https://github.com/ATTPC/attpc_engine/actions/workflows/ci.yml/badge.svg)
+![docs](https://github.com/ATTPC/attpc_engine/actions/workflows/docs.yml/badge.svg)
 
 attpc_merger is the AT-TPC event builder, written in Rust. It takes data produced by the AT-TPC data acquisition in the form of .graw files from the GET system and .evt files from the FRIBDAQ system, and combines them into a single unified event structure in the HDF5 format.
 
