@@ -25,7 +25,7 @@ hdf5 = { git = "https://github.com/aldanor/hdf5-rust.git" }
 human_bytes = "0.4.3"
 log = "0.4.22"
 ndarray = "0.15.6"
-serde = { version = "1.0.204", features = ["derive"] }
+serde = { version = "1.0.210", features = ["derive"] }
 serde_yaml = "0.9.34"
 simplelog = "0.12.2"
 time = "0.3.36"
