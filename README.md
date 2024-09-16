@@ -1,6 +1,5 @@
 # attpc_merger
 ![CI](https://github.com/ATTPC/attpc_engine/actions/workflows/ci.yml/badge.svg)
-![docs](https://github.com/ATTPC/attpc_engine/actions/workflows/docs.yml/badge.svg)
 
 attpc_merger is the AT-TPC event builder, written in Rust. It takes data produced by the AT-TPC data acquisition in the form of .graw files from the GET system and .evt files from the FRIBDAQ system, and combines them into a single unified event structure in the HDF5 format.
 
@@ -41,6 +40,10 @@ To build and install the GUI merger use `cargo install --path ./attpc_merger` fr
 To build and install the CLI merger use `cargo install --path ./attpc_merger_cli` from the top level attpc_merger repository.
 
 These binaries will be installed to your cargo install location (typically something like `~/.cargo/bin/`). They can be uninstalled by running `cargo uninstall attpc_merger/_cli`. Once they are installed, they will be in your path, so you can simply invoke them from the command line. To use the CLI see the `attpc_merger_cli` README.
+
+## Documentation
+
+Documentation is deployed through GitHub Pages and can be found [here](https://attpc.github.io/attpc_merger). Documentation is provided for the `libattpc_merger` library; the source code of the `attpc_merger\_cli` applications should be examined for details on the UI design and examples of using the merger library.
 
 ## Configuration
 
