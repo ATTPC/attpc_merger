@@ -34,17 +34,18 @@
 //! - last_run_number: The ending run number (inclusive)
 //! - online: Boolean flag indicating if online data sources should be used (overrides some of the path imformation); generally should be false
 //! - experiment: Experiment name as a string. Only used when online is true. Should match the experiment name used by the AT-TPC DAQ.
+//! - n_threads: The number of worker threads to divide the merging amongst.
 
 use clap::{Arg, Command};
-use indicatif::{MultiProgress, ProgressBar};
-use indicatif_log_bridge::LogWrapper;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use libattpc_merger::config::Config;
-use libattpc_merger::process::process;
+//use libattpc_merger::process::{create_subsets, process, process_subset};
+use libattpc_merger::process::{create_subsets, process_subset};
 
 fn make_template_config(path: &Path) {
     let config = Config::default();
@@ -67,87 +68,157 @@ fn main() {
         )
         .get_matches();
 
-    // Initialize feedback
-    let logger = simplelog::TermLogger::new(
-        simplelog::LevelFilter::Info,
-        simplelog::Config::default(),
-        simplelog::TerminalMode::Mixed,
-        simplelog::ColorChoice::Auto,
+    println!("---------------------------- attpc_merger_cli ---------------------------");
+
+    // Setup logging to a file
+    let file_sink = Arc::new(
+        spdlog::sink::FileSink::builder()
+            .path(PathBuf::from("./attpc_merger_cli.log"))
+            .formatter(Box::new(spdlog::formatter::PatternFormatter::new(
+                spdlog::formatter::pattern!(
+                    "[{date_short} {time_short}] - [thread: {tid}] - [{^{level}}] - {payload}{eol}"
+                ),
+            )))
+            .truncate(true)
+            .build()
+            .unwrap(),
     );
+    let logger = Arc::new(
+        spdlog::Logger::builder()
+            .flush_level_filter(spdlog::LevelFilter::All)
+            .sink(file_sink)
+            .build()
+            .unwrap(),
+    );
+    spdlog::set_default_logger(logger);
 
     let pb_manager = MultiProgress::new();
-
-    LogWrapper::new(pb_manager.clone(), logger)
-        .try_init()
-        .expect("Could not create logging/progress!");
 
     // Parse the cli
     let config_path = PathBuf::from(matches.get_one::<String>("path").expect("We require args"));
 
     match matches.subcommand() {
         Some(("new", _)) => {
-            log::info!(
+            println!(
                 "Making a template config at {}...",
                 config_path.to_string_lossy()
             );
 
             make_template_config(&config_path);
-            log::info!("Done.");
+            println!("Done.");
+            println!("-------------------------------------------------------------------------");
             return;
         }
         _ => (),
     }
 
     // Load our config
-    log::info!("Loading config from {}...", config_path.to_string_lossy());
+    spdlog::info!("Loading config from {}...", config_path.to_string_lossy());
     let config = match Config::read_config_file(&config_path) {
         Ok(c) => c,
         Err(e) => {
-            log::error!("{e}");
+            spdlog::error!("{e}");
             return;
         }
     };
-    log::info!("Config successfully loaded.");
-    log::info!("GRAW Path: {}", config.graw_path.to_string_lossy());
-    log::info!("HDF5 Path: {}", config.hdf_path.to_string_lossy());
-    log::info!("FRIB EVT Path: {}", config.evt_path.to_string_lossy());
-    log::info!("PadMap Path: {}", config.pad_map_path.to_string_lossy());
-    log::info!(
+    // Print out a bunch of info from the config as feedback to the user
+    println!("Config successfully loaded.");
+    println!("GRAW Path: {}", config.graw_path.to_string_lossy());
+    println!("HDF5 Path: {}", config.hdf_path.to_string_lossy());
+    println!("FRIB EVT Path: {}", config.evt_path.to_string_lossy());
+    println!("PadMap Path: {}", config.pad_map_path.to_string_lossy());
+    println!(
         "First Run: {} Last Run: {}",
-        config.first_run_number,
-        config.last_run_number
+        config.first_run_number, config.last_run_number
     );
-    log::info!("Experiment Name: {}", config.experiment);
-    log::info!("Is Online: {}", config.online);
+    println!("Experiment Name: {}", config.experiment);
+    println!("Is Online: {}", config.online);
+    println!("Number of Worker Threads: {}", config.n_threads);
+    println!("-------------------------- Progress Per Worker --------------------------");
 
-    // Setup the progress bar
-    let pb = pb_manager.add(ProgressBar::new(100));
-    let status = Arc::new(Mutex::new(0.0));
-    let sent_status = status.clone();
-    // Spawn the task!
-    let handle = std::thread::spawn(|| process(config, sent_status));
+    // Setup the progress bar, statuses, and workers
+    let mut progress_bars = vec![];
+    let mut statuses = vec![];
+    let mut current_runs = vec![];
+    let mut handles = vec![];
+
+    // Split the runs into subsets for each worker
+    let subsets = create_subsets(&config);
+    spdlog::info!("Subsets: {subsets:?}");
+    for (id, set) in subsets.into_iter().enumerate() {
+        // Don't make a worker for no work!
+        if set.is_empty() {
+            continue;
+        }
+        // Create all of this worker's info
+        let stat = Arc::new(Mutex::new(0.0));
+        let run = Arc::new(Mutex::new(0));
+        let bar = pb_manager.add(
+            ProgressBar::new(100)
+                .with_style(
+                    ProgressStyle::with_template(
+                        "[{msg} - {ellapsed_precise}] {bar:40.cyan/blue} {percent}%",
+                    )
+                    .unwrap(),
+                )
+                .with_message(format!("Worker {id}: Run N/A")),
+        );
+        // Spawn it
+        let conf = config.clone();
+        progress_bars.push(bar);
+        statuses.push(stat.clone());
+        current_runs.push(run.clone());
+        handles.push(std::thread::spawn(|| process_subset(conf, stat, run, set)))
+    }
 
     loop {
         // Ugh since we don't have a UI here, I manually sleep for ~ 1 sec before trying to update
         std::thread::sleep(std::time::Duration::from_secs(1));
-        match status.lock() {
-            Ok(stat) => pb.set_position((*stat * 100.0) as u64),
-            Err(e) => log::error!("{e}"),
+        // Update our progress bars with info from the workers
+        for (idx, bar) in progress_bars.iter().enumerate() {
+            let status = &statuses[idx];
+            match status.lock() {
+                Ok(stat) => bar.set_position((*stat * 100.0) as u64),
+                Err(e) => spdlog::error!("{e}"),
+            }
+            let run = &current_runs[idx];
+            match run.lock() {
+                Ok(r) => bar.set_message(format!("Worker {idx}: Run {r}")),
+                Err(e) => spdlog::error!("{e}"),
+            }
         }
 
-        if handle.is_finished() {
-            match handle.join() {
-                Ok(result) => match result {
-                    Ok(_) => log::info!("Successfully merged data!"),
-                    Err(e) => log::error!("Merging failed with error: {e}"),
-                },
-                Err(_) => log::error!("Failed to join merging task!"),
+        // Critical: We exit the run loop if all of the workers are done
+        let mut anyone_alive: bool = false;
+        for handle in handles.iter_mut() {
+            if !handle.is_finished() {
+                anyone_alive = true;
+                break;
             }
+        }
+        if !anyone_alive {
             break;
         }
     }
 
-    pb.finish();
+    // Recover all of our workers
+    for handle in handles {
+        match handle.join() {
+            Ok(result) => match result {
+                Ok(_) => spdlog::info!("Successfully merged data on one task!"),
+                Err(e) => spdlog::error!("Merging failed with error: {e}"),
+            },
+            Err(_) => spdlog::error!("Failed to join merging task!"),
+        }
+        break;
+    }
 
-    log::info!("Done.");
+    // Shutdown the progress bars
+    for bar in progress_bars {
+        bar.finish();
+    }
+    println!("-------------------------------------------------------------------------");
+
+    println!("Done.");
+    println!("-------------------------------------------------------------------------");
 }

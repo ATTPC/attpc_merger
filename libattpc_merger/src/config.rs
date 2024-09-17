@@ -15,6 +15,7 @@ pub struct Config {
     pub last_run_number: i32,
     pub online: bool,
     pub experiment: String,
+    pub n_threads: i32,
 }
 
 impl Config {
@@ -30,6 +31,7 @@ impl Config {
             last_run_number: 0,
             online: false,
             experiment: String::from(""),
+            n_threads: 1,
         }
     }
 

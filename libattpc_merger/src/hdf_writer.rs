@@ -186,8 +186,8 @@ impl HDFWriter {
             .write_scalar(&self.first_timestamp)?;
         // Check if FRIB & GET agree on event numbers
         if self.last_frib_event != self.last_get_event {
-            log::warn!("FRIB and GET do not agree on the number of events! FRIB saw {} events, while GET saw {} events", self.last_frib_event, self.last_get_event);
-            log::info!(
+            spdlog::warn!("FRIB and GET do not agree on the number of events! FRIB saw {} events, while GET saw {} events", self.last_frib_event, self.last_get_event);
+            spdlog::info!(
                 "The max_event attribute of the event group will be set to the last GET event."
             );
         }
@@ -203,7 +203,7 @@ impl HDFWriter {
         self.scalers_group
             .attr("max_event")?
             .write_scalar(&self.last_scaler_event)?;
-        log::info!(
+        spdlog::info!(
             "{} events written. Run lasted {} seconds.",
             self.last_get_event,
             (self.last_timestamp - self.first_timestamp) / 100_000_000, // Time Stamp Clock is 100 MHz

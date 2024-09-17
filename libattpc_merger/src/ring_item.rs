@@ -388,7 +388,7 @@ impl SIS3300Item {
             self.channels += 2; // channels are read in pairs
             header = cursor.read_u16::<LittleEndian>()?;
             if header != 0xfadc {
-                log::info!("Invalid SIS3300 header: {:#x}!", header);
+                spdlog::error!("Invalid SIS3300 header: {:#x}!", header);
                 break;
             }
             group_trigger = cursor.read_u32::<LittleEndian>()?;
@@ -425,7 +425,7 @@ impl SIS3300Item {
             cursor.set_position(starting_position + ((self.samples * 4) as u64));
             trailer = cursor.read_u16::<LittleEndian>()?;
             if trailer != 0xffff {
-                log::info!("Invalid SIS3300 trailer: {:#x}!", trailer);
+                spdlog::error!("Invalid SIS3300 trailer: {:#x}!", trailer);
                 break;
             }
         }
