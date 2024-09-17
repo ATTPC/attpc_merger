@@ -4,60 +4,82 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use eframe::egui::{Color32, RichText};
+use eframe::egui::{Color32, DragValue, ProgressBar, RichText};
 
 use libattpc_merger::config::Config;
 use libattpc_merger::error::ProcessorError;
-use libattpc_merger::process::process;
+use libattpc_merger::process::{create_subsets, process_subset};
 
 /// The UI app which inherits the eframe::App trait.
 ///
 /// The parent for all processing.
 #[derive(Debug)]
 pub struct MergerApp {
-    progress: Arc<Mutex<f32>>, //progress bar updating
+    progresses: Vec<Arc<Mutex<f32>>>, //progress bar updating
     config: Config,
-    worker: Option<JoinHandle<Result<(), ProcessorError>>>, //processing thread
+    workers: Vec<JoinHandle<Result<(), ProcessorError>>>, //processing thread
+    current_runs: Vec<Arc<Mutex<i32>>>,
 }
 
 impl MergerApp {
     /// Create the application
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         MergerApp {
-            progress: Arc::new(Mutex::new(0.0)),
+            progresses: vec![],
             config: Config::default(),
-            worker: None,
+            workers: vec![],
+            current_runs: vec![],
         }
     }
 
-    /// Start a processor
-    fn start_worker(&mut self) {
-        if self.worker.is_none() {
-            let prog = self.progress.clone();
-            let conf = self.config.clone();
-            if let Ok(mut counter) = self.progress.lock() {
-                *counter = 0.0;
-            } else {
-                println!("Sync error! Progress could not be reset!");
+    /// Start some workers
+    fn start_workers(&mut self) {
+        if self.workers.is_empty() {
+            self.progresses.clear();
+            self.current_runs.clear();
+            let subsets = create_subsets(&self.config);
+            for subset in subsets {
+                // Dont make empty workers
+                if subset.is_empty() {
+                    continue;
+                }
+                // Create all of this worker's info
+                let stat = Arc::new(Mutex::new(0.0));
+                let run = Arc::new(Mutex::new(0));
+                // Spawn it
+                let conf = self.config.clone();
+                self.progresses.push(stat.clone());
+                self.current_runs.push(run.clone());
+                self.workers.push(std::thread::spawn(|| {
+                    process_subset(conf, stat, run, subset)
+                }))
             }
-
-            self.worker = Some(std::thread::spawn(|| process(conf, prog)))
         }
     }
 
     /// Stop the processor
-    fn stop_worker(&mut self) {
-        if let Some(handle) = self.worker.take() {
-            match handle.join() {
-                Ok(result) => match result {
-                    Ok(_) => log::info!("Processor complete."),
-                    Err(e) => log::error!("Processor error: {}", e),
-                },
-                Err(_) => {
-                    log::error!("An error occurred joining the processor thread!");
+    fn stop_workers(&mut self) {
+        let n_workers = self.workers.len();
+        for _ in 0..n_workers {
+            if let Some(worker) = self.workers.pop() {
+                match worker.join() {
+                    Ok(res) => match res {
+                        Ok(_) => spdlog::info!("Worker complete"),
+                        Err(e) => spdlog::error!("Processor error: {e}"),
+                    },
+                    Err(_) => spdlog::error!("An error occured joining one of the workers!"),
                 }
             }
         }
+    }
+
+    fn are_any_workers_alive(&self) -> bool {
+        for worker in self.workers.iter() {
+            if !worker.is_finished() {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Write the current Config to a file
@@ -66,15 +88,17 @@ impl MergerApp {
             match serde_yaml::to_string(&self.config) {
                 Ok(yaml_str) => match conf_file.write(yaml_str.as_bytes()) {
                     Ok(_) => (),
-                    Err(x) => log::error!("Error writing config to file{}: {}", path.display(), x),
+                    Err(x) => {
+                        spdlog::error!("Error writing config to file{}: {}", path.display(), x)
+                    }
                 },
-                Err(x) => log::error!(
+                Err(x) => spdlog::error!(
                     "Unable to write configuration to file, serializer error: {}",
                     x
                 ),
             };
         } else {
-            log::error!("Could not open file {} for config write", path.display());
+            spdlog::error!("Could not open file {} for config write", path.display());
         }
     }
 
@@ -82,7 +106,7 @@ impl MergerApp {
     fn read_config(&mut self, path: &Path) {
         match Config::read_config_file(path) {
             Ok(conf) => self.config = conf,
-            Err(e) => log::error!("{}", e),
+            Err(e) => spdlog::error!("{}", e),
         }
     }
 }
@@ -198,53 +222,53 @@ impl eframe::App for MergerApp {
                 ui.end_row();
 
                 ui.label("First Run Number");
-                ui.add(
-                    eframe::egui::widgets::DragValue::new(&mut self.config.first_run_number)
-                        .speed(1),
-                );
+                ui.add(DragValue::new(&mut self.config.first_run_number).speed(1));
                 ui.end_row();
 
                 ui.label("Last Run Number");
-                ui.add(
-                    eframe::egui::widgets::DragValue::new(&mut self.config.last_run_number)
-                        .speed(1),
-                );
-                ui.end_row()
+                ui.add(DragValue::new(&mut self.config.last_run_number).speed(1));
+                ui.end_row();
+
+                ui.label("Number of Workers");
+                ui.add(DragValue::new(&mut self.config.n_threads).speed(1));
+                ui.end_row();
             });
 
             //Controls
             // You can only click run if there isn't already someone working
             if ui
-                .add_enabled(self.worker.is_none(), eframe::egui::Button::new("Run"))
+                .add_enabled(self.workers.is_empty(), eframe::egui::Button::new("Run"))
                 .clicked()
             {
-                log::info!("Starting processor...");
-                self.start_worker();
-            } else {
-                match self.worker.as_ref() {
-                    Some(worker) => {
-                        if worker.is_finished() {
-                            self.stop_worker()
-                        }
-                    }
-                    None => (),
-                }
+                spdlog::info!("Starting processor...");
+                self.start_workers();
+            } else if !self.are_any_workers_alive() {
+                self.stop_workers();
             }
 
-            //Progress Bar
+            //Progress Bars
             ui.separator();
             ui.label(
-                RichText::new("Progress")
+                RichText::new("Progress Per Worker")
                     .color(Color32::LIGHT_BLUE)
                     .size(18.0),
             );
-            ui.add(
-                eframe::egui::widgets::ProgressBar::new(match self.progress.lock() {
-                    Ok(x) => *x,
+            for (idx, progress) in self.progresses.iter().enumerate() {
+                let crun = match self.current_runs[idx].lock() {
+                    Ok(r) => *r,
+                    Err(_) => 0,
+                };
+                let prog = match progress.lock() {
+                    Ok(p) => *p,
                     Err(_) => 0.0,
-                })
-                .show_percentage(),
-            );
+                };
+                ui.add(ProgressBar::new(prog).text(format!(
+                    "Worker {} : Run {} - {}%",
+                    idx,
+                    crun,
+                    (prog * 100.0) as i32
+                )));
+            }
 
             ctx.request_repaint_after(std::time::Duration::from_secs(1));
         });

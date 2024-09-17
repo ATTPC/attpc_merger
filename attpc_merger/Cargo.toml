@@ -11,7 +11,6 @@ authors.workspace = true
 libattpc_merger.workspace = true
 eframe = "0.28.1"
 native-dialog = { version = "0.7.0", features = ["windows_dpi_awareness"] }
-log.workspace = true
+spdlog-rs.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
-simplelog.workspace = true

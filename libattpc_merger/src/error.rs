@@ -410,6 +410,46 @@ impl Display for EventBuilderError {
 
 impl Error for EventBuilderError {}
 
+// HDF5Writer Error
+#[derive(Debug)]
+pub enum HDF5WriterError {
+    HDF5Error(hdf5::Error),
+    IOError(std::io::Error),
+    ParsingError(serde_yaml::Error),
+}
+
+impl From<std::io::Error> for HDF5WriterError {
+    fn from(value: std::io::Error) -> Self {
+        Self::IOError(value)
+    }
+}
+
+impl From<hdf5::Error> for HDF5WriterError {
+    fn from(value: hdf5::Error) -> Self {
+        Self::HDF5Error(value)
+    }
+}
+
+impl From<serde_yaml::Error> for HDF5WriterError {
+    fn from(value: serde_yaml::Error) -> Self {
+        Self::ParsingError(value)
+    }
+}
+
+impl Display for HDF5WriterError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::HDF5Error(e) => write!(f, "HDF5Writer recieved an HDF5 error: {}", e),
+            Self::IOError(e) => write!(f, "HDF5Writer recieved an IO error: {}", e),
+            Self::ParsingError(e) => {
+                write!(f, "HDFWriter recieved an error converting to yaml: {e}")
+            }
+        }
+    }
+}
+
+impl Error for HDF5WriterError {}
+
 /*
    Config errors
 */
@@ -450,7 +490,7 @@ impl Error for ConfigError {}
 pub enum ProcessorError {
     EVBError(EventBuilderError),
     MergerError(MergerError),
-    HDFError(hdf5::Error),
+    HDFError(HDF5WriterError),
     ConfigError(ConfigError),
     MapError(PadMapError),
     EvtError(EvtStackError),
@@ -469,8 +509,8 @@ impl From<EventBuilderError> for ProcessorError {
     }
 }
 
-impl From<hdf5::Error> for ProcessorError {
-    fn from(value: hdf5::Error) -> Self {
+impl From<HDF5WriterError> for ProcessorError {
+    fn from(value: HDF5WriterError) -> Self {
         Self::HDFError(value)
     }
 }

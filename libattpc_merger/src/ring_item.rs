@@ -252,16 +252,17 @@ impl ScalersItem {
         }
     }
 
-    /// Temporary. Used to convert metadata to a single array.
-    pub fn get_header_array(&self) -> Vec<u32> {
-        vec![
-            self.start_offset,
-            self.stop_offset,
-            self.timestamp,
-            self.data.len() as u32,
-            self.incremental,
-        ]
-    }
+    // Temporary. Used to convert metadata to a single array.
+    // Now unused
+    // pub fn get_header_array(&self) -> Vec<u32> {
+    //     vec![
+    //         self.start_offset,
+    //         self.stop_offset,
+    //         self.timestamp,
+    //         self.data.len() as u32,
+    //         self.incremental,
+    //     ]
+    // }
 }
 
 /// A RingItem which contains the count of the number of physics items found by FRIBDAQ.
@@ -337,10 +338,11 @@ impl PhysicsItem {
         }
     }
 
-    /// Temporary. Used to convert metadata to a single array.
-    pub fn get_header_array(&self) -> Vec<u32> {
-        return vec![self.event, self.timestamp];
-    }
+    // Temporary. Used to convert metadata to a single array.
+    // Now unused
+    // pub fn get_header_array(&self) -> Vec<u32> {
+    //     return vec![self.event, self.timestamp];
+    // }
 }
 
 /// Item from Struck module SIS3300: 8 channel flash ADC (12 bits)
@@ -386,7 +388,7 @@ impl SIS3300Item {
             self.channels += 2; // channels are read in pairs
             header = cursor.read_u16::<LittleEndian>()?;
             if header != 0xfadc {
-                log::info!("Invalid SIS3300 header: {:#x}!", header);
+                spdlog::error!("Invalid SIS3300 header: {:#x}!", header);
                 break;
             }
             group_trigger = cursor.read_u32::<LittleEndian>()?;
@@ -423,7 +425,7 @@ impl SIS3300Item {
             cursor.set_position(starting_position + ((self.samples * 4) as u64));
             trailer = cursor.read_u16::<LittleEndian>()?;
             if trailer != 0xffff {
-                log::info!("Invalid SIS3300 trailer: {:#x}!", trailer);
+                spdlog::error!("Invalid SIS3300 trailer: {:#x}!", trailer);
                 break;
             }
         }

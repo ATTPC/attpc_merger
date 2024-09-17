@@ -52,14 +52,15 @@ impl Event {
         return data_matrix;
     }
 
-    /// Formated header array
-    pub fn get_header_array(&self) -> Array1<f64> {
-        ndarray::arr1(&[
-            self.event_id as f64,
-            self.timestamp as f64,
-            self.timestampother as f64,
-        ])
-    }
+    // Formated header array
+    // Now unused
+    // pub fn get_header_array(&self) -> Array1<f64> {
+    //     ndarray::arr1(&[
+    //         self.event_id as f64,
+    //         self.timestamp as f64,
+    //         self.timestampother as f64,
+    //     ])
+    // }
 
     /// Add a frame to the event.
     ///

@@ -1,9 +1,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use super::ring_item::{
-    BeginRunItem, CounterItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem,
-};
+use super::ring_item::{BeginRunItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem};
 
 use super::config::Config;
 use super::constants::SIZE_UNIT;
@@ -19,20 +17,20 @@ fn flush_final_event(
     mut evb: EventBuilder,
     mut writer: HDFWriter,
     event_counter: &u64,
-) -> Result<(), hdf5::Error> {
+) -> Result<(), ProcessorError> {
     if let Some(event) = evb.flush_final_event() {
-        writer.write_event(event, &event_counter)
-    } else {
-        Ok(())
+        writer.write_event(event, &event_counter)?;
+        writer.close()?;
     }
+    Ok(())
 }
 
 /// Process the evt data for this run
-fn process_evt_data(evt_path: PathBuf, writer: &HDFWriter) -> Result<(), ProcessorError> {
+fn process_evt_data(evt_path: PathBuf, writer: &mut HDFWriter) -> Result<(), ProcessorError> {
     let mut evt_stack = EvtStack::new(&evt_path)?; // open evt file
     let mut run_info = RunInfo::new();
-    let mut scaler_counter: u32 = 0;
-    let mut event_counter = CounterItem::new();
+    let mut scaler_counter: u64 = 0;
+    let mut event_counter: u64 = 0;
     loop {
         if let Some(mut ring) = evt_stack.get_next_ring_item()? {
             match ring.ring_type {
@@ -40,31 +38,29 @@ fn process_evt_data(evt_path: PathBuf, writer: &HDFWriter) -> Result<(), Process
                 RingType::BeginRun => {
                     // Begin run
                     run_info.begin = BeginRunItem::try_from(ring)?;
-                    log::info!("Detected begin run -- {}", run_info.print_begin());
+                    spdlog::info!("Detected begin run -- {}", run_info.print_begin());
                 }
                 RingType::EndRun => {
                     // End run
                     run_info.end = EndRunItem::try_from(ring)?;
-                    log::info!("Detected end run -- {}", run_info.print_end());
-                    writer.write_evtinfo(run_info)?;
+                    spdlog::info!("Detected end run -- {}", run_info.print_end());
+                    writer.write_frib_runinfo(run_info)?;
                     break;
                 }
                 RingType::Dummy => (),
                 RingType::Scalers => {
                     // Scalers
-                    writer.write_scalers(ScalersItem::try_from(ring)?, scaler_counter)?;
+                    writer.write_frib_scalers(ScalersItem::try_from(ring)?, &scaler_counter)?;
                     scaler_counter += 1;
                 }
                 RingType::Physics => {
                     // Physics data
                     ring.remove_boundaries(); // physics event often cross VMUSB buffer boundary
-                    writer.write_physics(PhysicsItem::try_from(ring)?, &event_counter.count)?;
-                    event_counter.count += 1;
+                    writer.write_frib_physics(PhysicsItem::try_from(ring)?, &event_counter)?;
+                    event_counter += 1;
                 }
-                RingType::Counter => {
-                    event_counter = CounterItem::try_from(ring)?;
-                }
-                _ => log::info!("Unrecognized ring type: {}", ring.bytes[4]),
+                RingType::Counter => (), // Unused, old that could cause many errors
+                _ => spdlog::error!("Unrecognized ring type: {}", ring.bytes[4]),
             }
         } else {
             break;
@@ -86,7 +82,7 @@ pub fn process_run(
 
     //Initialize the merger, event builder, and hdf writer
     let mut merger = Merger::new(config, run_number)?;
-    log::info!(
+    spdlog::info!(
         "Total run size: {}",
         human_bytes::human_bytes(*merger.get_total_data_size() as f64)
     );
@@ -101,22 +97,22 @@ pub fn process_run(
     // Handle evt data if present
     match config.get_evt_directory(run_number) {
         Ok(evt_path) => {
-            log::info!("Now processing evt data...");
-            match process_evt_data(evt_path, &writer) {
-                Ok(_) => log::info!("Done with evt data."),
+            spdlog::info!("Now processing evt data...");
+            match process_evt_data(evt_path, &mut writer) {
+                Ok(_) => spdlog::info!("Done with evt data."),
                 Err(e) => {
-                    log::warn!("Error while processing evt data: {e}\nSkipping evt processing.")
+                    spdlog::warn!("Error while processing evt data: {e}\nSkipping evt processing.")
                 }
             }
         }
         Err(e) => {
-            log::warn!("Could not access evt directory: {e}");
-            log::warn!("Skipping processing evt data...");
+            spdlog::warn!("Could not access evt directory: {e}");
+            spdlog::warn!("Skipping processing evt data...");
         }
     }
 
     //Handle the get data
-    log::info!("Processing get data...");
+    spdlog::info!("Processing get data...");
     writer.write_fileinfo(&merger).unwrap();
     let mut event_counter = 0;
     loop {
@@ -139,7 +135,6 @@ pub fn process_run(
             }
         } else {
             //If the merger returns none, there is no more data to be read
-            writer.write_meta()?; // write meta dataset (first and last event id + ts)
             flush_final_event(evb, writer, &event_counter)?;
             break;
         }
@@ -147,7 +142,7 @@ pub fn process_run(
     if let Ok(mut bar) = progress.lock() {
         *bar = 1.0;
     }
-    log::info!("Done with get data.");
+    spdlog::info!("Done with get data.");
 
     return Ok(());
 }
@@ -161,12 +156,47 @@ pub fn process(config: Config, progress: Arc<Mutex<f32>>) -> Result<(), Processo
             *bar = 0.0;
         }
         if config.does_run_exist(run) {
-            log::info!("Processing run {}...", run);
+            spdlog::info!("Processing run {}...", run);
             process_run(&config, run, progress.clone())?;
-            log::info!("Finished processing run {}.", run);
+            spdlog::info!("Finished processing run {}.", run);
         } else {
-            log::info!("Run {} does not exist, skipping...", run);
+            spdlog::info!("Run {} does not exist, skipping...", run);
         }
     }
     Ok(())
+}
+
+pub fn process_subset(
+    config: Config,
+    progress: Arc<Mutex<f32>>,
+    current_run: Arc<Mutex<i32>>,
+    subset: Vec<i32>,
+) -> Result<(), ProcessorError> {
+    for run in subset {
+        if let Ok(mut bar) = progress.lock() {
+            *bar = 0.0;
+        }
+        if let Ok(mut crun) = current_run.lock() {
+            *crun = run;
+        }
+        if config.does_run_exist(run) {
+            spdlog::info!("Processing run {}...", run);
+            process_run(&config, run, progress.clone())?;
+            spdlog::info!("Finished processing run {}.", run);
+        } else {
+            spdlog::info!("Run {} does not exist, skipping...", run);
+        }
+    }
+    Ok(())
+}
+
+pub fn create_subsets(config: &Config) -> Vec<Vec<i32>> {
+    let mut subsets: Vec<Vec<i32>> = vec![Vec::new(); config.n_threads as usize];
+    let n_subsets = subsets.len();
+
+    for (idx, run) in (config.first_run_number..(config.last_run_number + 1)).enumerate() {
+        subsets[idx % n_subsets].push(run)
+    }
+
+    return subsets;
 }
