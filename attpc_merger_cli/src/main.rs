@@ -126,7 +126,7 @@ fn main() {
     println!("GRAW Path: {}", config.graw_path.to_string_lossy());
     println!("HDF5 Path: {}", config.hdf_path.to_string_lossy());
     println!("FRIB EVT Path: {}", config.evt_path.to_string_lossy());
-    println!("PadMap Path: {}", config.pad_map_path.to_string_lossy());
+    println!("PadMap Path: {:?}", config.pad_map_path);
     println!(
         "First Run: {} Last Run: {}",
         config.first_run_number, config.last_run_number

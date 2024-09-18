@@ -78,7 +78,7 @@ pub fn process_run(
     progress: Arc<Mutex<f32>>,
 ) -> Result<(), ProcessorError> {
     let hdf_path = config.get_hdf_file_name(run_number)?;
-    let pad_map = PadMap::new(&config.pad_map_path)?;
+    let pad_map = PadMap::new(config.pad_map_path.as_deref())?;
 
     //Initialize the merger, event builder, and hdf writer
     let mut merger = Merger::new(config, run_number)?;

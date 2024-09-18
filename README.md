@@ -1,4 +1,5 @@
 # attpc_merger
+
 ![CI](https://github.com/ATTPC/attpc_engine/actions/workflows/ci.yml/badge.svg)
 
 attpc_merger is the AT-TPC event builder, written in Rust. It takes data produced by the AT-TPC data acquisition in the form of .graw files from the GET system and .evt files from the FRIBDAQ system, and combines them into a single unified event structure in the HDF5 format.
@@ -54,13 +55,27 @@ The following configuration controls are available in the GUI:
 - GRAW directory: Specifies the full-path to a directory which contains the AT-TPC GETDAQ .graw structure (i.e. contains subdirectories of the run_# format). If online is checked, this field is not available.
 - EVT directory: Specifies the full-path to a directory which contains the FRIBDAQ EVT structure (i.e. contains subdirectories of the run# format)
 - HDF5 directory: Specifies the full-path to a directory to which merged HDF5 (.h5) files will be written
-- Pad map: Specifies the full path to a CSV file which contains the mapping information for AT-TPC pads and electronics
+- Pad map (Optional): Specifies the full path to a CSV file which contains the mapping information for AT-TPC pads and electronics. If set to default (clicking the Default button), it will use a pad map that has been bundled with the code base.
 - First Run Number: The starting run number (inclusive)
 - Last Run Number: The ending run number (inclusive)
 
 Configurations can be saved using File->Save and loaded using File->Open
 
-A configuration file saved using the UI is compatible with the CLI and vice-versa.
+A configuration file saved using the UI is compatible with the CLI and vice-versa. The YAML format of a configuration file is as follows:
+
+```yml
+graw_path: None
+evt_path: None
+hdf_path: None
+pad_map_path: null
+first_run_number: 0
+last_run_number: 0
+online: false
+experiment: ''
+n_threads: 1
+```
+
+Note that if the `pad_map_path` field is set to `null`, the bundled default map will be used.
 
 ## Output
 

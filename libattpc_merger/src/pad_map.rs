@@ -9,6 +9,18 @@ use super::error::PadMapError;
 
 const ENTRIES_PER_LINE: usize = 5; //Number of elements in a single row in the CSV file
 
+/// Load the default map for windows
+#[cfg(target_family = "windows")]
+fn load_default_map() -> String {
+    return String::from(include_str!("data\\default_pad_map.csv"));
+}
+
+/// Load the default map for macos and linux
+#[cfg(target_family = "unix")]
+fn load_default_map() -> String {
+    return String::from(include_str!("data/default_pad_map.csv"));
+}
+
 /// HardwareID is a hashable wrapper around the full hardware address (including the pad number).
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct HardwareID {
@@ -56,12 +68,17 @@ pub struct PadMap {
 }
 
 impl PadMap {
-    /// Create a new PadMap using the CSV file at the given path
-    pub fn new(path: &Path) -> Result<Self, PadMapError> {
-        let mut file = File::open(path)?;
+    /// Create a new PadMap
+    /// If the path is None, we load the default that is bundled with the merger
+    pub fn new(path: Option<&Path>) -> Result<Self, PadMapError> {
         let mut contents = String::new();
+        if let Some(p) = path {
+            let mut file = File::open(p)?;
+            file.read_to_string(&mut contents)?;
+        } else {
+            contents = load_default_map();
+        }
 
-        file.read_to_string(&mut contents)?;
         let mut cb_id: u8;
         let mut ad_id: u8;
         let mut ag_id: u8;

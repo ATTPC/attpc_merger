@@ -10,6 +10,16 @@ use libattpc_merger::config::Config;
 use libattpc_merger::error::ProcessorError;
 use libattpc_merger::process::{create_subsets, process_subset};
 
+fn render_error_dialog(show: &mut bool, ctx: &eframe::egui::Context) {
+    eframe::egui::Window::new("Error")
+        .open(show)
+        .show(ctx, |ui| {
+            ui.label(
+                "There was an error! Check the log file attpc_merger.log for more information.",
+            )
+        });
+}
+
 /// The UI app which inherits the eframe::App trait.
 ///
 /// The parent for all processing.
@@ -19,6 +29,7 @@ pub struct MergerApp {
     config: Config,
     workers: Vec<JoinHandle<Result<(), ProcessorError>>>, //processing thread
     current_runs: Vec<Arc<Mutex<i32>>>,
+    show_error_window: bool,
 }
 
 impl MergerApp {
@@ -29,11 +40,13 @@ impl MergerApp {
             config: Config::default(),
             workers: vec![],
             current_runs: vec![],
+            show_error_window: true,
         }
     }
 
     /// Start some workers
     fn start_workers(&mut self) {
+        // Safety first
         if self.workers.is_empty() {
             self.progresses.clear();
             self.current_runs.clear();
@@ -57,7 +70,7 @@ impl MergerApp {
         }
     }
 
-    /// Stop the processor
+    /// Stop the workers
     fn stop_workers(&mut self) {
         let n_workers = self.workers.len();
         for _ in 0..n_workers {
@@ -65,14 +78,21 @@ impl MergerApp {
                 match worker.join() {
                     Ok(res) => match res {
                         Ok(_) => spdlog::info!("Worker complete"),
-                        Err(e) => spdlog::error!("Processor error: {e}"),
+                        Err(e) => {
+                            self.show_error_window = true;
+                            spdlog::error!("Processor error: {e}")
+                        }
                     },
-                    Err(_) => spdlog::error!("An error occured joining one of the workers!"),
+                    Err(_) => {
+                        self.show_error_window = true;
+                        spdlog::error!("An error occured joining one of the workers!")
+                    }
                 }
             }
         }
     }
 
+    /// Check if there are any workers still doing stuff
     fn are_any_workers_alive(&self) -> bool {
         for worker in self.workers.iter() {
             if !worker.is_finished() {
@@ -83,7 +103,7 @@ impl MergerApp {
     }
 
     /// Write the current Config to a file
-    fn write_config(&self, path: &Path) {
+    fn write_config(&mut self, path: &Path) {
         if let Ok(mut conf_file) = File::create(path) {
             match serde_yaml::to_string(&self.config) {
                 Ok(yaml_str) => match conf_file.write(yaml_str.as_bytes()) {
@@ -98,6 +118,7 @@ impl MergerApp {
                 ),
             };
         } else {
+            self.show_error_window = true;
             spdlog::error!("Could not open file {} for config write", path.display());
         }
     }
@@ -113,6 +134,7 @@ impl MergerApp {
 
 impl eframe::App for MergerApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        render_error_dialog(&mut self.show_error_window, ctx);
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             //Menus
             ui.menu_button("File", |ui| {
@@ -207,7 +229,11 @@ impl eframe::App for MergerApp {
                 ui.end_row();
 
                 //Pad map
-                ui.label(format!("Pad map: {}", self.config.pad_map_path.display()));
+                let map_render_text: String = match &self.config.pad_map_path {
+                    Some(p) => p.to_string_lossy().to_string(),
+                    None => String::from("Default"),
+                };
+                ui.label(format!("Pad map: {}", map_render_text));
                 if ui.button("Open...").clicked() {
                     if let Ok(Some(path)) = native_dialog::FileDialog::new()
                         .set_location(
@@ -216,8 +242,11 @@ impl eframe::App for MergerApp {
                         .add_filter("CSV file", &["csv", "CSV", "txt"])
                         .show_open_single_file()
                     {
-                        self.config.pad_map_path = path;
+                        self.config.pad_map_path = Some(path);
                     }
+                }
+                if ui.button("Default").clicked() {
+                    self.config.pad_map_path = None
                 }
                 ui.end_row();
 

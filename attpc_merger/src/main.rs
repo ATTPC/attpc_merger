@@ -61,6 +61,7 @@ fn main() {
             .unwrap(),
     );
     spdlog::set_default_logger(logger);
+    spdlog::info!("Starting AT-TPC Merger UI");
 
     let mut native_options = eframe::NativeOptions::default();
     native_options.viewport = eframe::egui::ViewportBuilder::default()
