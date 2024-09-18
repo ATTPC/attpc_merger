@@ -58,6 +58,7 @@ The following configuration controls are available in the GUI:
 - Pad map (Optional): Specifies the full path to a CSV file which contains the mapping information for AT-TPC pads and electronics. If set to default (clicking the Default button), it will use a pad map that has been bundled with the code base.
 - First Run Number: The starting run number (inclusive)
 - Last Run Number: The ending run number (inclusive)
+- Number of Workers: The number of parallel worker threads to divide the runs amongst. Each worker will get a subset of the run range. If you don't have enough runs to give all workers something to do, only the threads that would do work are created (i.e. n_workers = 3, n_runs = 2, only 2 workers are created). Must be at least 1.
 
 Configurations can be saved using File->Save and loaded using File->Open
 

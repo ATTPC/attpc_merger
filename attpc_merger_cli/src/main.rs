@@ -113,7 +113,7 @@ fn main() {
     }
 
     // Load our config
-    spdlog::info!("Loading config from {}...", config_path.to_string_lossy());
+    spdlog::info!("Loading config from {}...", config_path.display());
     let config = match Config::read_config_file(&config_path) {
         Ok(c) => c,
         Err(e) => {
@@ -121,6 +121,18 @@ fn main() {
             return;
         }
     };
+    if !config.is_n_threads_valid() {
+        spdlog::error!(
+            "n_threads must be > 0 in config file {}",
+            config_path.display()
+        );
+        println!(
+            "n_threads must be > 0 in config file {}",
+            config_path.display()
+        );
+        println!("-------------------------------------------------------------------------");
+        return;
+    }
     // Print out a bunch of info from the config as feedback to the user
     println!("Config successfully loaded.");
     println!("GRAW Path: {}", config.graw_path.to_string_lossy());

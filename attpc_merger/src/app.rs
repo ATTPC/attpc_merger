@@ -40,7 +40,7 @@ impl MergerApp {
             config: Config::default(),
             workers: vec![],
             current_runs: vec![],
-            show_error_window: true,
+            show_error_window: false,
         }
     }
 
@@ -259,7 +259,11 @@ impl eframe::App for MergerApp {
                 ui.end_row();
 
                 ui.label("Number of Workers");
-                ui.add(DragValue::new(&mut self.config.n_threads).speed(1));
+                ui.add(
+                    DragValue::new(&mut self.config.n_threads)
+                        .speed(1)
+                        .range(std::ops::RangeInclusive::new(1, 10)),
+                );
                 ui.end_row();
             });
 

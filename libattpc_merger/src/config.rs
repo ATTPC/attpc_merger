@@ -107,4 +107,8 @@ impl Config {
     fn get_run_str(&self, run_number: i32) -> String {
         return format!("run_{:0>4}", run_number);
     }
+
+    pub fn is_n_threads_valid(&self) -> bool {
+        return self.n_threads >= 1;
+    }
 }
