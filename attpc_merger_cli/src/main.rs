@@ -45,7 +45,7 @@ use std::sync::{Arc, Mutex};
 
 use libattpc_merger::config::Config;
 //use libattpc_merger::process::{create_subsets, process, process_subset};
-use libattpc_merger::process::{create_subsets, process_subset};
+use libattpc_merger::process::{create_subsets, process_subset, ProcessStatus};
 
 fn make_template_config(path: &Path) {
     let config = Config::default();
@@ -151,7 +151,6 @@ fn main() {
     // Setup the progress bar, statuses, and workers
     let mut progress_bars = vec![];
     let mut statuses = vec![];
-    let mut current_runs = vec![];
     let mut handles = vec![];
 
     // Split the runs into subsets for each worker
@@ -164,8 +163,10 @@ fn main() {
             continue;
         }
         // Create all of this worker's info
-        let stat = Arc::new(Mutex::new(0.0));
-        let run = Arc::new(Mutex::new(0));
+        let stat = Arc::new(Mutex::new(ProcessStatus {
+            progress: 0.0,
+            run_number: 0,
+        }));
         let bar = pb_manager.add(
             ProgressBar::new(100)
                 .with_style(
@@ -180,8 +181,7 @@ fn main() {
         let conf = config.clone();
         progress_bars.push(bar);
         statuses.push(stat.clone());
-        current_runs.push(run.clone());
-        handles.push(std::thread::spawn(|| process_subset(conf, stat, run, set)))
+        handles.push(std::thread::spawn(|| process_subset(conf, stat, set)))
     }
 
     loop {
@@ -191,18 +191,13 @@ fn main() {
         for (idx, bar) in progress_bars.iter().enumerate() {
             let status = &statuses[idx];
             match status.lock() {
-                Ok(stat) => bar.set_position((*stat * 100.0) as u64),
+                Ok(stat) => {
+                    bar.set_position((stat.progress * 100.0) as u64);
+                    bar.set_message(format!("Worker {}: Run {}", idx, stat.run_number));
+                }
                 Err(e) => {
                     error_occured = true;
                     spdlog::error!("{e}");
-                }
-            }
-            let run = &current_runs[idx];
-            match run.lock() {
-                Ok(r) => bar.set_message(format!("Worker {idx}: Run {r}")),
-                Err(e) => {
-                    error_occured = true;
-                    spdlog::error!("{e}")
                 }
             }
         }

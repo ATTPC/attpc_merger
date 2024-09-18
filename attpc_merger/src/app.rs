@@ -8,7 +8,7 @@ use eframe::egui::{Color32, DragValue, ProgressBar, RichText};
 
 use libattpc_merger::config::Config;
 use libattpc_merger::error::ProcessorError;
-use libattpc_merger::process::{create_subsets, process_subset};
+use libattpc_merger::process::{create_subsets, process_subset, ProcessStatus};
 
 fn render_error_dialog(show: &mut bool, ctx: &eframe::egui::Context) {
     eframe::egui::Window::new("Error")
@@ -25,10 +25,9 @@ fn render_error_dialog(show: &mut bool, ctx: &eframe::egui::Context) {
 /// The parent for all processing.
 #[derive(Debug)]
 pub struct MergerApp {
-    progresses: Vec<Arc<Mutex<f32>>>, //progress bar updating
     config: Config,
     workers: Vec<JoinHandle<Result<(), ProcessorError>>>, //processing thread
-    current_runs: Vec<Arc<Mutex<i32>>>,
+    worker_statuses: Vec<Arc<Mutex<ProcessStatus>>>,
     show_error_window: bool,
 }
 
@@ -36,10 +35,9 @@ impl MergerApp {
     /// Create the application
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         MergerApp {
-            progresses: vec![],
             config: Config::default(),
             workers: vec![],
-            current_runs: vec![],
+            worker_statuses: vec![],
             show_error_window: false,
         }
     }
@@ -48,8 +46,7 @@ impl MergerApp {
     fn start_workers(&mut self) {
         // Safety first
         if self.workers.is_empty() {
-            self.progresses.clear();
-            self.current_runs.clear();
+            self.worker_statuses.clear();
             let subsets = create_subsets(&self.config);
             for subset in subsets {
                 // Dont make empty workers
@@ -57,15 +54,15 @@ impl MergerApp {
                     continue;
                 }
                 // Create all of this worker's info
-                let stat = Arc::new(Mutex::new(0.0));
-                let run = Arc::new(Mutex::new(0));
+                let stat = Arc::new(Mutex::new(ProcessStatus {
+                    progress: 0.0,
+                    run_number: 0,
+                }));
                 // Spawn it
                 let conf = self.config.clone();
-                self.progresses.push(stat.clone());
-                self.current_runs.push(run.clone());
-                self.workers.push(std::thread::spawn(|| {
-                    process_subset(conf, stat, run, subset)
-                }))
+                self.worker_statuses.push(stat.clone());
+                self.workers
+                    .push(std::thread::spawn(|| process_subset(conf, stat, subset)))
             }
         }
     }
@@ -286,21 +283,18 @@ impl eframe::App for MergerApp {
                     .color(Color32::LIGHT_BLUE)
                     .size(18.0),
             );
-            for (idx, progress) in self.progresses.iter().enumerate() {
-                let crun = match self.current_runs[idx].lock() {
-                    Ok(r) => *r,
-                    Err(_) => 0,
-                };
-                let prog = match progress.lock() {
-                    Ok(p) => *p,
-                    Err(_) => 0.0,
-                };
-                ui.add(ProgressBar::new(prog).text(format!(
-                    "Worker {} : Run {} - {}%",
-                    idx,
-                    crun,
-                    (prog * 100.0) as i32
-                )));
+            for (idx, status) in self.worker_statuses.iter().enumerate() {
+                match status.lock() {
+                    Ok(stat) => {
+                        ui.add(ProgressBar::new(stat.progress).text(format!(
+                            "Worker {} : Run {} - {}%",
+                            idx,
+                            stat.run_number,
+                            (stat.progress * 100.0) as i32
+                        )));
+                    },
+                    Err(e) => spdlog::warn!("An error occured trying to get the lock to Process {idx} status! Error: {e}")
+                }
             }
 
             ctx.request_repaint_after(std::time::Duration::from_secs(1));

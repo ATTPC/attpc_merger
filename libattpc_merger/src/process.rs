@@ -12,6 +12,12 @@ use super::hdf_writer::HDFWriter;
 use super::merger::Merger;
 use super::pad_map::PadMap;
 
+#[derive(Debug, Clone)]
+pub struct ProcessStatus {
+    pub progress: f32,
+    pub run_number: i32,
+}
+
 /// The final event of the EventBuilder will need a manual flush
 fn flush_final_event(
     mut evb: EventBuilder,
@@ -75,7 +81,7 @@ fn process_evt_data(evt_path: PathBuf, writer: &mut HDFWriter) -> Result<(), Pro
 pub fn process_run(
     config: &Config,
     run_number: i32,
-    progress: Arc<Mutex<f32>>,
+    status: &Arc<Mutex<ProcessStatus>>,
 ) -> Result<(), ProcessorError> {
     let hdf_path = config.get_hdf_file_name(run_number)?;
     let pad_map = PadMap::new(config.pad_map_path.as_deref())?;
@@ -122,8 +128,8 @@ pub fn process_run(
             count += (frame.header.frame_size as u32 * SIZE_UNIT) as u64;
             if count > flush_val {
                 count = 0;
-                if let Ok(mut bar) = progress.lock() {
-                    *bar += flush_frac;
+                if let Ok(mut stat) = status.lock() {
+                    stat.progress += flush_frac;
                 }
             }
 
@@ -139,8 +145,8 @@ pub fn process_run(
             break;
         }
     }
-    if let Ok(mut bar) = progress.lock() {
-        *bar = 1.0;
+    if let Ok(mut stat) = status.lock() {
+        stat.progress = 1.0;
     }
     spdlog::info!("Done with get data.");
 
@@ -150,14 +156,15 @@ pub fn process_run(
 /// The function to be called by a separate thread (typically the UI).
 ///
 /// Allows multiple runs to be processed
-pub fn process(config: Config, progress: Arc<Mutex<f32>>) -> Result<(), ProcessorError> {
+pub fn process(config: Config, status: Arc<Mutex<ProcessStatus>>) -> Result<(), ProcessorError> {
     for run in config.first_run_number..(config.last_run_number + 1) {
-        if let Ok(mut bar) = progress.lock() {
-            *bar = 0.0;
+        if let Ok(mut stat) = status.lock() {
+            stat.progress = 0.0;
+            stat.run_number = run;
         }
         if config.does_run_exist(run) {
             spdlog::info!("Processing run {}...", run);
-            process_run(&config, run, progress.clone())?;
+            process_run(&config, run, &status)?;
             spdlog::info!("Finished processing run {}.", run);
         } else {
             spdlog::info!("Run {} does not exist, skipping...", run);
@@ -168,20 +175,17 @@ pub fn process(config: Config, progress: Arc<Mutex<f32>>) -> Result<(), Processo
 
 pub fn process_subset(
     config: Config,
-    progress: Arc<Mutex<f32>>,
-    current_run: Arc<Mutex<i32>>,
+    status: Arc<Mutex<ProcessStatus>>,
     subset: Vec<i32>,
 ) -> Result<(), ProcessorError> {
     for run in subset {
-        if let Ok(mut bar) = progress.lock() {
-            *bar = 0.0;
-        }
-        if let Ok(mut crun) = current_run.lock() {
-            *crun = run;
+        if let Ok(mut stat) = status.lock() {
+            stat.progress = 0.0;
+            stat.run_number = run;
         }
         if config.does_run_exist(run) {
             spdlog::info!("Processing run {}...", run);
-            process_run(&config, run, progress.clone())?;
+            process_run(&config, run, &status)?;
             spdlog::info!("Finished processing run {}.", run);
         } else {
             spdlog::info!("Run {} does not exist, skipping...", run);
