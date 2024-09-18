@@ -145,6 +145,7 @@ fn main() {
     // Split the runs into subsets for each worker
     let subsets = create_subsets(&config);
     spdlog::info!("Subsets: {subsets:?}");
+    let mut error_occured = false;
     for (id, set) in subsets.into_iter().enumerate() {
         // Don't make a worker for no work!
         if set.is_empty() {
@@ -179,12 +180,18 @@ fn main() {
             let status = &statuses[idx];
             match status.lock() {
                 Ok(stat) => bar.set_position((*stat * 100.0) as u64),
-                Err(e) => spdlog::error!("{e}"),
+                Err(e) => {
+                    error_occured = true;
+                    spdlog::error!("{e}");
+                }
             }
             let run = &current_runs[idx];
             match run.lock() {
                 Ok(r) => bar.set_message(format!("Worker {idx}: Run {r}")),
-                Err(e) => spdlog::error!("{e}"),
+                Err(e) => {
+                    error_occured = true;
+                    spdlog::error!("{e}")
+                }
             }
         }
 
@@ -206,9 +213,15 @@ fn main() {
         match handle.join() {
             Ok(result) => match result {
                 Ok(_) => spdlog::info!("Successfully merged data on one task!"),
-                Err(e) => spdlog::error!("Merging failed with error: {e}"),
+                Err(e) => {
+                    error_occured = true;
+                    spdlog::error!("Merging failed with error: {e}")
+                }
             },
-            Err(_) => spdlog::error!("Failed to join merging task!"),
+            Err(_) => {
+                error_occured = true;
+                spdlog::error!("Failed to join merging task!")
+            }
         }
         break;
     }
@@ -218,6 +231,11 @@ fn main() {
         bar.finish();
     }
     println!("-------------------------------------------------------------------------");
+    if error_occured {
+        println!(
+            "An error occurred during merging! Check the attpc_merger_cli.log file for details"
+        )
+    }
 
     println!("Done.");
     println!("-------------------------------------------------------------------------");
