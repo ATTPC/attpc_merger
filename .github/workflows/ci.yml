@@ -30,4 +30,6 @@ jobs:
         run: cargo test
       
       - name: Lint
-        run: cargo clippy
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --all-targets --all-features
