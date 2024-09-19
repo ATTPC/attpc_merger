@@ -150,7 +150,8 @@ pub fn process_run(
 }
 
 /// The function to be called by a separate thread (typically the UI).
-///
+/// This particular flavor is unused by the default tools (attpc_merger and attpc_merger_cli)
+/// but could be useful to someone else
 /// Allows multiple runs to be processed
 pub fn process(config: Config, status: Arc<Mutex<ProcessStatus>>) -> Result<(), ProcessorError> {
     for run in config.first_run_number..(config.last_run_number + 1) {
@@ -169,6 +170,7 @@ pub fn process(config: Config, status: Arc<Mutex<ProcessStatus>>) -> Result<(), 
     Ok(())
 }
 
+/// Process a subset of runs
 pub fn process_subset(
     config: Config,
     status: Arc<Mutex<ProcessStatus>>,
@@ -190,6 +192,7 @@ pub fn process_subset(
     Ok(())
 }
 
+/// Divide a run range in to a set of subranges (per thread/worker)
 pub fn create_subsets(config: &Config) -> Vec<Vec<i32>> {
     let mut subsets: Vec<Vec<i32>> = vec![Vec::new(); config.n_threads as usize];
     let n_subsets = subsets.len();
