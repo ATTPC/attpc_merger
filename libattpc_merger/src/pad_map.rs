@@ -89,9 +89,10 @@ impl PadMap {
 
         let mut pm = PadMap::default();
 
-        for line in contents.lines() {
+        let mut lines = contents.lines();
+        lines.next(); // Skip the header
+        for line in lines {
             let entries: Vec<&str> = line.split_terminator(",").collect();
-
             if entries.len() < ENTRIES_PER_LINE {
                 return Err(PadMapError::BadFileFormat);
             }
@@ -123,5 +124,32 @@ impl PadMap {
         let uuid = generate_uuid(cobo_id, asad_id, aget_id, channel_id);
         let val = self.map.get(&uuid);
         return val;
+    }
+}
+
+//Unit tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_map() {
+        let map = match PadMap::new(None) {
+            Ok(m) => m,
+            Err(_) => {
+                panic!();
+            }
+        };
+        let cobo_id: u8 = 7;
+        let asad_id: u8 = 2;
+        let aget_id: u8 = 1;
+        let channel: u8 = 10;
+        let pad_id: u64 = 9908;
+        let expected_id = HardwareID::new(&cobo_id, &asad_id, &aget_id, &channel, &pad_id);
+        let given_id = match map.get_hardware_id(&cobo_id, &asad_id, &aget_id, &channel) {
+            Some(id) => id,
+            None => panic!(),
+        };
+        assert_eq!(expected_id, *given_id);
     }
 }

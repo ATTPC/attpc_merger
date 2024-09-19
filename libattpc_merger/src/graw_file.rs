@@ -14,7 +14,6 @@ use super::graw_frame::{FrameMetadata, GrawFrame, GrawFrameHeader};
 /// The functional purpose of the GrawFile is to provide an interface to the underlying binary data,
 /// by providing methods which query the metadata (event data) of the next GrawFrame
 /// (the functional data unit of a GrawFile) as well as retrieving the next GrawFrame.
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct GrawFile {
     file_handle: File,

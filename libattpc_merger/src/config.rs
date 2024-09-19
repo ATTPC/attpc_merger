@@ -19,7 +19,6 @@ pub struct Config {
 }
 
 impl Config {
-    #[allow(dead_code)]
     /// Generate a new Config object. All fields will be empty/invalid
     pub fn default() -> Self {
         Self {
