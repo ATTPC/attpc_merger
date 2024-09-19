@@ -94,6 +94,6 @@ run_0001.h5
 |    |    |---- frib_physics - id, timestamp
 |    |    |    |---- 907(dset)
 |    |    |    |---- 1903(dset)
-|    scalers - min_event, max_event
+|---- scalers - min_event, max_event
 |    |---- event_#(dset) - start_offset, stop_offset, timestamp, incremental
 ```
