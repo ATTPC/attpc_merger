@@ -51,7 +51,7 @@ impl Merger {
         }
 
         //Oops no files
-        if merger.file_stacks.len() == 0 {
+        if merger.file_stacks.is_empty() {
             return Err(MergerError::NoFilesError);
         }
 
@@ -86,13 +86,13 @@ impl Merger {
 
         if earliest_event_index.is_none() {
             //None of the remaining stacks had data for us. We've read everything.
-            return Ok(None);
+            Ok(None)
         } else {
             //This MUST happen before the retain call. The indexes will be modified.
             let frame = self.file_stacks[earliest_event_index.unwrap().0].get_next_frame()?;
             //Only keep stacks which still have data to be read
             self.file_stacks.retain(|stack| stack.is_not_ended());
-            return Ok(Some(frame));
+            Ok(Some(frame))
         }
     }
 

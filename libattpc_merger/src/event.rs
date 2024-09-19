@@ -49,7 +49,7 @@ impl Event {
             trace.move_into(&mut trace_slice);
         }
 
-        return data_matrix;
+        data_matrix
     }
 
     // Formated header array
@@ -105,7 +105,7 @@ impl Event {
             };
 
             // Put the data in the appropriate trace
-            match self.traces.get_mut(&hw_id) {
+            match self.traces.get_mut(hw_id) {
                 Some(trace) => {
                     trace[datum.time_bucket_id as usize] = datum.sample;
                 }

@@ -12,13 +12,13 @@ const ENTRIES_PER_LINE: usize = 5; //Number of elements in a single row in the C
 /// Load the default map for windows
 #[cfg(target_family = "windows")]
 fn load_default_map() -> String {
-    return String::from(include_str!("data\\default_pad_map.csv"));
+    String::from(include_str!("data\\default_pad_map.csv"))
 }
 
 /// Load the default map for macos and linux
 #[cfg(target_family = "unix")]
 fn load_default_map() -> String {
-    return String::from(include_str!("data/default_pad_map.csv"));
+    String::from(include_str!("data/default_pad_map.csv"))
 }
 
 /// HardwareID is a hashable wrapper around the full hardware address (including the pad number).
@@ -52,10 +52,10 @@ impl Hash for HardwareID {
 
 /// Generate a unique id number for a given hardware location
 fn generate_uuid(cobo_id: &u8, asad_id: &u8, aget_id: &u8, channel_id: &u8) -> u64 {
-    return (*channel_id as u64)
+    (*channel_id as u64)
         + (*aget_id as u64) * 100
         + (*asad_id as u64) * 10_000
-        + (*cobo_id as u64) * 1_000_000;
+        + (*cobo_id as u64) * 1_000_000
 }
 
 /// PadMap contains the mapping of the individual hardware identifiers (CoBo ID, AsAd ID, AGET ID, AGET channel) to AT-TPC pad number.
@@ -122,8 +122,7 @@ impl PadMap {
         channel_id: &u8,
     ) -> Option<&HardwareID> {
         let uuid = generate_uuid(cobo_id, asad_id, aget_id, channel_id);
-        let val = self.map.get(&uuid);
-        return val;
+        self.map.get(&uuid)
     }
 }
 

@@ -25,7 +25,7 @@ fn flush_final_event(
     event_counter: &u64,
 ) -> Result<(), ProcessorError> {
     if let Some(event) = evb.flush_final_event() {
-        writer.write_event(event, &event_counter)?;
+        writer.write_event(event, event_counter)?;
         writer.close()?;
     }
     Ok(())
@@ -37,39 +37,35 @@ fn process_evt_data(evt_path: PathBuf, writer: &mut HDFWriter) -> Result<(), Pro
     let mut run_info = RunInfo::new();
     let mut scaler_counter: u64 = 0;
     let mut event_counter: u64 = 0;
-    loop {
-        if let Some(mut ring) = evt_stack.get_next_ring_item()? {
-            match ring.ring_type {
-                // process each ring depending on its type
-                RingType::BeginRun => {
-                    // Begin run
-                    run_info.begin = BeginRunItem::try_from(ring)?;
-                    spdlog::info!("Detected begin run -- {}", run_info.print_begin());
-                }
-                RingType::EndRun => {
-                    // End run
-                    run_info.end = EndRunItem::try_from(ring)?;
-                    spdlog::info!("Detected end run -- {}", run_info.print_end());
-                    writer.write_frib_runinfo(run_info)?;
-                    break;
-                }
-                RingType::Dummy => (),
-                RingType::Scalers => {
-                    // Scalers
-                    writer.write_frib_scalers(ScalersItem::try_from(ring)?, &scaler_counter)?;
-                    scaler_counter += 1;
-                }
-                RingType::Physics => {
-                    // Physics data
-                    ring.remove_boundaries(); // physics event often cross VMUSB buffer boundary
-                    writer.write_frib_physics(PhysicsItem::try_from(ring)?, &event_counter)?;
-                    event_counter += 1;
-                }
-                RingType::Counter => (), // Unused, old that could cause many errors
-                _ => spdlog::error!("Unrecognized ring type: {}", ring.bytes[4]),
+    while let Some(mut ring) = evt_stack.get_next_ring_item()? {
+        match ring.ring_type {
+            // process each ring depending on its type
+            RingType::BeginRun => {
+                // Begin run
+                run_info.begin = BeginRunItem::try_from(ring)?;
+                spdlog::info!("Detected begin run -- {}", run_info.print_begin());
             }
-        } else {
-            break;
+            RingType::EndRun => {
+                // End run
+                run_info.end = EndRunItem::try_from(ring)?;
+                spdlog::info!("Detected end run -- {}", run_info.print_end());
+                writer.write_frib_runinfo(run_info)?;
+                break;
+            }
+            RingType::Dummy => (),
+            RingType::Scalers => {
+                // Scalers
+                writer.write_frib_scalers(ScalersItem::try_from(ring)?, &scaler_counter)?;
+                scaler_counter += 1;
+            }
+            RingType::Physics => {
+                // Physics data
+                ring.remove_boundaries(); // physics event often cross VMUSB buffer boundary
+                writer.write_frib_physics(PhysicsItem::try_from(ring)?, &event_counter)?;
+                event_counter += 1;
+            }
+            RingType::Counter => (), // Unused, old that could cause many errors
+            _ => spdlog::error!("Unrecognized ring type: {}", ring.bytes[4]),
         }
     }
     Ok(())
@@ -125,7 +121,7 @@ pub fn process_run(
         if let Some(frame) = merger.get_next_frame()? {
             //Merger found a frame
             //bleh
-            count += (frame.header.frame_size as u32 * SIZE_UNIT) as u64;
+            count += (frame.header.frame_size * SIZE_UNIT) as u64;
             if count > flush_val {
                 count = 0;
                 if let Ok(mut stat) = status.lock() {
@@ -150,7 +146,7 @@ pub fn process_run(
     }
     spdlog::info!("Done with get data.");
 
-    return Ok(());
+    Ok(())
 }
 
 /// The function to be called by a separate thread (typically the UI).
@@ -202,5 +198,5 @@ pub fn create_subsets(config: &Config) -> Vec<Vec<i32>> {
         subsets[idx % n_subsets].push(run)
     }
 
-    return subsets;
+    subsets
 }

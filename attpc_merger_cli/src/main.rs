@@ -97,19 +97,16 @@ fn main() {
     // Parse the cli
     let config_path = PathBuf::from(matches.get_one::<String>("path").expect("We require args"));
 
-    match matches.subcommand() {
-        Some(("new", _)) => {
-            println!(
-                "Making a template config at {}...",
-                config_path.to_string_lossy()
-            );
+    if let Some(("new", _)) = matches.subcommand() {
+        println!(
+            "Making a template config at {}...",
+            config_path.to_string_lossy()
+        );
 
-            make_template_config(&config_path);
-            println!("Done.");
-            println!("-------------------------------------------------------------------------");
-            return;
-        }
-        _ => (),
+        make_template_config(&config_path);
+        println!("Done.");
+        println!("-------------------------------------------------------------------------");
+        return;
     }
 
     // Load our config
@@ -230,7 +227,6 @@ fn main() {
                 spdlog::error!("Failed to join merging task!")
             }
         }
-        break;
     }
 
     // Shutdown the progress bars

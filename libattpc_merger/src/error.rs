@@ -158,7 +158,7 @@ impl Display for EvtItemError {
 
 impl From<std::io::Error> for EvtItemError {
     fn from(value: std::io::Error) -> Self {
-        return Self::IOError(value);
+        Self::IOError(value)
     }
 }
 

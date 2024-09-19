@@ -36,7 +36,7 @@ impl AsadStack {
         asad_number: i32,
     ) -> Result<Self, AsadStackError> {
         let (mut file_stack, total_stack_size_bytes) =
-            Self::get_file_stack(&data_path, &cobo_number, &asad_number)?;
+            Self::get_file_stack(data_path, &cobo_number, &asad_number)?;
         if let Some(path) = file_stack.pop_front() {
             //Activate the first file
             Ok(AsadStack {
@@ -126,19 +126,18 @@ impl AsadStack {
         cobo_number: &i32,
         asad_number: &i32,
     ) -> Result<(VecDeque<PathBuf>, u64), AsadStackError> {
-        let stack: VecDeque<PathBuf>;
         let mut file_list: Vec<PathBuf> = Vec::new();
         let start_pattern = format!("CoBo{}_AsAd{}", *cobo_number, *asad_number);
         let end_pattern = ".graw";
         for item in parent_path.read_dir()? {
             let item_path = item?.path();
             let item_path_str = item_path.to_str().unwrap();
-            if item_path_str.contains(&start_pattern) && item_path_str.contains(&end_pattern) {
+            if item_path_str.contains(&start_pattern) && item_path_str.contains(end_pattern) {
                 file_list.push(item_path);
             }
         }
 
-        if file_list.len() == 0 {
+        if file_list.is_empty() {
             return Err(AsadStackError::NoMatchingFiles);
         }
 
@@ -147,9 +146,9 @@ impl AsadStack {
             .fold(0, |sum, path| sum + path.metadata().unwrap().len());
 
         file_list.sort(); // Can sort standard. The only change should be in the number at the tail.
-        stack = file_list.into();
+        let stack = file_list.into();
 
-        return Ok((stack, total_stack_size_bytes));
+        Ok((stack, total_stack_size_bytes))
     }
 
     /// Move to the next file in the stack

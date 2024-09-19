@@ -58,7 +58,6 @@ impl EvtStack {
 
     /// Get all of the associated .evt files and put them in the stack
     fn get_file_stack(parent_path: &Path) -> Result<(VecDeque<PathBuf>, u64), EvtStackError> {
-        let stack: VecDeque<PathBuf>;
         let mut file_list: Vec<PathBuf> = Vec::new();
         let start_pattern = "run-";
         let end_pattern = ".evt";
@@ -70,7 +69,7 @@ impl EvtStack {
             }
         }
 
-        if file_list.len() == 0 {
+        if file_list.is_empty() {
             return Err(EvtStackError::NoMatchingFiles);
         }
 
@@ -79,9 +78,9 @@ impl EvtStack {
             .fold(0, |sum, path| sum + path.metadata().unwrap().len());
 
         file_list.sort(); // Can sort standard. The only change should be the number at the tail.
-        stack = file_list.into();
+        let stack = file_list.into();
 
-        return Ok((stack, total_stack_size_bytes));
+        Ok((stack, total_stack_size_bytes))
     }
 
     ///Move to the next file in the stack

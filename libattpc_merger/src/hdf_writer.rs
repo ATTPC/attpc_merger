@@ -171,7 +171,7 @@ impl HDFWriter {
         }
 
         let mut parent_file = std::fs::File::create(&self.parent_file_path)?;
-        parent_file.write(serde_yaml::to_string(&file_map)?.as_bytes())?;
+        parent_file.write_all(serde_yaml::to_string(&file_map)?.as_bytes())?;
 
         Ok(())
     }
@@ -290,7 +290,7 @@ impl HDFWriter {
         // write V977 data
         physics_group
             .new_dataset_builder()
-            .with_data(&[u16::try_from(physics.coinc.coinc).unwrap()])
+            .with_data(&[physics.coinc.coinc])
             .create("977")?;
         // write SIS3300 data
         let mut data_matrix =

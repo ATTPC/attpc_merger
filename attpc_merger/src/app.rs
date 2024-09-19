@@ -96,7 +96,7 @@ impl MergerApp {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     /// Write the current Config to a file

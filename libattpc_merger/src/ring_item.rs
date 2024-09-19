@@ -63,7 +63,7 @@ impl TryFrom<Vec<u8>> for RingItem {
         {
             let type_data = buffer.get(4);
             match type_data {
-                Some(data) => rt_data = data.clone(),
+                Some(data) => rt_data = *data,
                 None => return Err(EvtItemError::ItemSizeError),
             };
         }
@@ -84,14 +84,19 @@ impl TryFrom<Vec<u8>> for RingItem {
     }
 }
 
-impl RingItem {
-    #[allow(dead_code)]
-    pub fn new() -> Self {
+impl Default for RingItem {
+    fn default() -> Self {
         Self {
             size: 0,
             bytes: vec![],
             ring_type: RingType::Invalid,
         }
+    }
+}
+
+impl RingItem {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Remove VMUSB buffer boundaries from the RingItem data buffer.
@@ -109,7 +114,7 @@ impl RingItem {
             wlength = u16::from_le_bytes(buf) & 0xfff; // buffer length
             self.bytes.remove(ind);
             self.bytes.remove(ind); // 2 bytes to remove
-            ind += usize::try_from(wlength * 2).unwrap(); // next boundary
+            ind += usize::from(wlength * 2); // next boundary
         }
     }
 }
@@ -118,7 +123,7 @@ impl RingItem {
 // try_from semantics.
 
 /// RingItem which contains the run number, the start time, and the run title
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct BeginRunItem {
     pub run: u32,
     pub start: u32,
@@ -136,22 +141,18 @@ impl TryFrom<RingItem> for BeginRunItem {
         info.start = cursor.read_u32::<LittleEndian>()?;
         cursor.set_position(cursor.position() + 4);
         cursor.read_to_string(&mut info.title)?;
-        return Ok(info);
+        Ok(info)
     }
 }
 
 impl BeginRunItem {
     pub fn new() -> Self {
-        Self {
-            run: 0,
-            start: 0,
-            title: String::new(),
-        }
+        Self::default()
     }
 }
 
 /// RingItem which contains the run stop time, and the ellapsed time.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct EndRunItem {
     pub stop: u32,
     pub time: u32,
@@ -166,29 +167,26 @@ impl TryFrom<RingItem> for EndRunItem {
 
         info.stop = cursor.read_u32::<LittleEndian>()?;
         info.time = cursor.read_u32::<LittleEndian>()?;
-        return Ok(info);
+        Ok(info)
     }
 }
 
 impl EndRunItem {
     pub fn new() -> Self {
-        Self { stop: 0, time: 0 }
+        Self::default()
     }
 }
 
 /// Simple container for the begin and end run info for ease of use with HDF
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RunInfo {
     pub begin: BeginRunItem,
     pub end: EndRunItem,
 }
 
 impl RunInfo {
-    pub fn new() -> RunInfo {
-        RunInfo {
-            begin: BeginRunItem::new(),
-            end: EndRunItem::new(),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
@@ -211,7 +209,7 @@ impl RunInfo {
 /// Scalers are composed of a header containing the timing of the scaler data
 /// and a data vector that contains the scalers themselves (32 bits). The order of the scalers
 /// is defined by FRIBDAQ.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ScalersItem {
     pub start_offset: u32,
     pub stop_offset: u32,
@@ -237,36 +235,18 @@ impl TryFrom<RingItem> for ScalersItem {
             *value = cursor.read_u32::<LittleEndian>()?;
         }
 
-        return Ok(info);
+        Ok(info)
     }
 }
 
 impl ScalersItem {
-    pub fn new() -> ScalersItem {
-        ScalersItem {
-            start_offset: 0,
-            stop_offset: 0,
-            timestamp: 0,
-            incremental: 0,
-            data: vec![],
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
-
-    // Temporary. Used to convert metadata to a single array.
-    // Now unused
-    // pub fn get_header_array(&self) -> Vec<u32> {
-    //     vec![
-    //         self.start_offset,
-    //         self.stop_offset,
-    //         self.timestamp,
-    //         self.data.len() as u32,
-    //         self.incremental,
-    //     ]
-    // }
 }
 
 /// A RingItem which contains the count of the number of physics items found by FRIBDAQ.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct CounterItem {
     pub count: u64,
 }
@@ -279,13 +259,13 @@ impl TryFrom<RingItem> for CounterItem {
         let mut info = Self::new();
         cursor.set_position(12);
         info.count = cursor.read_u64::<LittleEndian>()?;
-        return Ok(info);
+        Ok(info)
     }
 }
 
 impl CounterItem {
     pub fn new() -> Self {
-        return Self { count: 0 };
+        Self::default()
     }
 }
 
@@ -324,7 +304,13 @@ impl TryFrom<RingItem> for PhysicsItem {
         }
         info.coinc.extract_data(&mut cursor)?;
 
-        return Ok(info);
+        Ok(info)
+    }
+}
+
+impl Default for PhysicsItem {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -337,12 +323,6 @@ impl PhysicsItem {
             coinc: V977Item::new(),
         }
     }
-
-    // Temporary. Used to convert metadata to a single array.
-    // Now unused
-    // pub fn get_header_array(&self) -> Vec<u32> {
-    //     return vec![self.event, self.timestamp];
-    // }
 }
 
 /// Item from Struck module SIS3300: 8 channel flash ADC (12 bits)
@@ -351,6 +331,12 @@ pub struct SIS3300Item {
     pub traces: Vec<Vec<u16>>,
     pub samples: usize,
     pub channels: usize,
+}
+
+impl Default for SIS3300Item {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SIS3300Item {
@@ -437,19 +423,19 @@ impl SIS3300Item {
 /// Item from CAEN module V977: 16 bit coincidence register
 ///
 /// A simple coicidence flag buffer
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct V977Item {
     pub coinc: u16,
 }
 
 impl V977Item {
-    pub fn new() -> V977Item {
-        V977Item { coinc: 0 }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Nothing too fancy. Read a single u16 from the PhysicsItem buffer
     pub fn extract_data(&mut self, cursor: &mut Cursor<Vec<u8>>) -> Result<(), EvtItemError> {
         self.coinc = cursor.read_u16::<LittleEndian>()?;
-        return Ok(());
+        Ok(())
     }
 }

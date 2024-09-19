@@ -63,12 +63,14 @@ fn main() {
     spdlog::set_default_logger(logger);
     spdlog::info!("Starting AT-TPC Merger UI");
 
-    let mut native_options = eframe::NativeOptions::default();
-    native_options.viewport = eframe::egui::ViewportBuilder::default()
-        .with_title("ATTPC Merger")
-        .with_inner_size(eframe::epaint::vec2(600.0, 400.0))
-        .with_min_inner_size(eframe::epaint::vec2(600.0, 300.0));
-    native_options.follow_system_theme = false;
+    let native_options = eframe::NativeOptions {
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_title("ATTPC Merger")
+            .with_inner_size(eframe::epaint::vec2(600.0, 400.0))
+            .with_min_inner_size(eframe::epaint::vec2(600.0, 300.0)),
+        follow_system_theme: false,
+        ..Default::default()
+    };
     match eframe::run_native(
         "attpc_merger",
         native_options,
@@ -77,5 +79,4 @@ fn main() {
         Ok(()) => (),
         Err(e) => spdlog::error!("Eframe error: {}", e),
     }
-    return;
 }
