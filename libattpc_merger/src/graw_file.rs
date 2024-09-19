@@ -14,7 +14,6 @@ use super::graw_frame::{FrameMetadata, GrawFrame, GrawFrameHeader};
 /// The functional purpose of the GrawFile is to provide an interface to the underlying binary data,
 /// by providing methods which query the metadata (event data) of the next GrawFrame
 /// (the functional data unit of a GrawFile) as well as retrieving the next GrawFrame.
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct GrawFile {
     file_handle: File,
@@ -33,14 +32,13 @@ impl GrawFile {
         }
 
         let file_path = path.to_path_buf();
-        let file = File::open(path)?;
-        let size_bytes = file.metadata()?.len();
-        let handle = file;
+        let file_handle = File::open(path)?;
+        let size_bytes = file_handle.metadata()?.len();
 
         Ok(GrawFile {
-            file_handle: handle,
+            file_handle,
             file_path,
-            size_bytes: size_bytes,
+            size_bytes,
             next_frame_metadata: FrameMetadata::default(),
             is_eof: false,
             is_open: true,
@@ -61,15 +59,11 @@ impl GrawFile {
             Err(e) => match e.kind() {
                 std::io::ErrorKind::UnexpectedEof => {
                     self.is_eof = true;
-                    return Err(GrawFileError::EndOfFile);
+                    Err(GrawFileError::EndOfFile)
                 }
-                _ => {
-                    return Err(GrawFileError::IOError(e));
-                }
+                _ => Err(GrawFileError::IOError(e)),
             },
-            Ok(()) => {
-                return Ok(GrawFrame::try_from(frame_word)?);
-            }
+            Ok(()) => Ok(GrawFrame::try_from(frame_word)?),
         }
     }
 
@@ -110,18 +104,16 @@ impl GrawFile {
         let current_position = self.file_handle.stream_position()?;
         let mut header_word: Vec<u8> = vec![0; read_size];
         //Check to see if we reach end of file
-        match self.file_handle.read_exact(&mut header_word) {
-            Err(e) => match e.kind() {
+        if let Err(e) = self.file_handle.read_exact(&mut header_word) {
+            match e.kind() {
                 std::io::ErrorKind::UnexpectedEof => {
                     self.is_eof = true;
                     return Err(GrawFileError::EndOfFile);
                 }
-                _ => {
-                    return Err(GrawFileError::IOError(e));
-                }
-            },
-            Ok(_) => (),
+                _ => return Err(GrawFileError::IOError(e)),
+            }
         }
+
         let header = GrawFrameHeader::read_from_buffer(&mut Cursor::new(header_word))?;
         //Return to the start of the header
         self.file_handle

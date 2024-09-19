@@ -4,77 +4,119 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use eframe::egui::{Color32, RichText};
+use eframe::egui::{Color32, DragValue, ProgressBar, RichText};
 
 use libattpc_merger::config::Config;
 use libattpc_merger::error::ProcessorError;
-use libattpc_merger::process::process;
+use libattpc_merger::process::{create_subsets, process_subset, ProcessStatus};
+
+fn render_error_dialog(show: &mut bool, ctx: &eframe::egui::Context) {
+    eframe::egui::Window::new("Error")
+        .open(show)
+        .show(ctx, |ui| {
+            ui.label(
+                "There was an error! Check the log file attpc_merger.log for more information.",
+            )
+        });
+}
 
 /// The UI app which inherits the eframe::App trait.
 ///
 /// The parent for all processing.
 #[derive(Debug)]
 pub struct MergerApp {
-    progress: Arc<Mutex<f32>>, //progress bar updating
     config: Config,
-    worker: Option<JoinHandle<Result<(), ProcessorError>>>, //processing thread
+    workers: Vec<JoinHandle<Result<(), ProcessorError>>>, //processing thread
+    worker_statuses: Vec<Arc<Mutex<ProcessStatus>>>,
+    show_error_window: bool,
 }
 
 impl MergerApp {
     /// Create the application
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         MergerApp {
-            progress: Arc::new(Mutex::new(0.0)),
             config: Config::default(),
-            worker: None,
+            workers: vec![],
+            worker_statuses: vec![],
+            show_error_window: false,
         }
     }
 
-    /// Start a processor
-    fn start_worker(&mut self) {
-        if self.worker.is_none() {
-            let prog = self.progress.clone();
-            let conf = self.config.clone();
-            if let Ok(mut counter) = self.progress.lock() {
-                *counter = 0.0;
-            } else {
-                println!("Sync error! Progress could not be reset!");
+    /// Start some workers
+    fn start_workers(&mut self) {
+        // Safety first
+        if self.workers.is_empty() {
+            self.worker_statuses.clear();
+            let subsets = create_subsets(&self.config);
+            for subset in subsets {
+                // Dont make empty workers
+                if subset.is_empty() {
+                    continue;
+                }
+                // Create all of this worker's info
+                let stat = Arc::new(Mutex::new(ProcessStatus {
+                    progress: 0.0,
+                    run_number: 0,
+                }));
+                // Spawn it
+                let conf = self.config.clone();
+                self.worker_statuses.push(stat.clone());
+                self.workers
+                    .push(std::thread::spawn(|| process_subset(conf, stat, subset)))
             }
-
-            self.worker = Some(std::thread::spawn(|| process(conf, prog)))
         }
     }
 
-    /// Stop the processor
-    fn stop_worker(&mut self) {
-        if let Some(handle) = self.worker.take() {
-            match handle.join() {
-                Ok(result) => match result {
-                    Ok(_) => log::info!("Processor complete."),
-                    Err(e) => log::error!("Processor error: {}", e),
-                },
-                Err(_) => {
-                    log::error!("An error occurred joining the processor thread!");
+    /// Stop the workers
+    fn stop_workers(&mut self) {
+        let n_workers = self.workers.len();
+        for _ in 0..n_workers {
+            if let Some(worker) = self.workers.pop() {
+                match worker.join() {
+                    Ok(res) => match res {
+                        Ok(_) => spdlog::info!("Worker complete"),
+                        Err(e) => {
+                            self.show_error_window = true;
+                            spdlog::error!("Processor error: {e}")
+                        }
+                    },
+                    Err(_) => {
+                        self.show_error_window = true;
+                        spdlog::error!("An error occured joining one of the workers!")
+                    }
                 }
             }
         }
     }
 
+    /// Check if there are any workers still doing stuff
+    fn are_any_workers_alive(&self) -> bool {
+        for worker in self.workers.iter() {
+            if !worker.is_finished() {
+                return true;
+            }
+        }
+        false
+    }
+
     /// Write the current Config to a file
-    fn write_config(&self, path: &Path) {
+    fn write_config(&mut self, path: &Path) {
         if let Ok(mut conf_file) = File::create(path) {
             match serde_yaml::to_string(&self.config) {
                 Ok(yaml_str) => match conf_file.write(yaml_str.as_bytes()) {
                     Ok(_) => (),
-                    Err(x) => log::error!("Error writing config to file{}: {}", path.display(), x),
+                    Err(x) => {
+                        spdlog::error!("Error writing config to file{}: {}", path.display(), x)
+                    }
                 },
-                Err(x) => log::error!(
+                Err(x) => spdlog::error!(
                     "Unable to write configuration to file, serializer error: {}",
                     x
                 ),
             };
         } else {
-            log::error!("Could not open file {} for config write", path.display());
+            self.show_error_window = true;
+            spdlog::error!("Could not open file {} for config write", path.display());
         }
     }
 
@@ -82,13 +124,14 @@ impl MergerApp {
     fn read_config(&mut self, path: &Path) {
         match Config::read_config_file(path) {
             Ok(conf) => self.config = conf,
-            Err(e) => log::error!("{}", e),
+            Err(e) => spdlog::error!("{}", e),
         }
     }
 }
 
 impl eframe::App for MergerApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        render_error_dialog(&mut self.show_error_window, ctx);
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             //Menus
             ui.menu_button("File", |ui| {
@@ -183,7 +226,11 @@ impl eframe::App for MergerApp {
                 ui.end_row();
 
                 //Pad map
-                ui.label(format!("Pad map: {}", self.config.pad_map_path.display()));
+                let map_render_text: String = match &self.config.pad_map_path {
+                    Some(p) => p.to_string_lossy().to_string(),
+                    None => String::from("Default"),
+                };
+                ui.label(format!("Pad map: {}", map_render_text));
                 if ui.button("Open...").clicked() {
                     if let Ok(Some(path)) = native_dialog::FileDialog::new()
                         .set_location(
@@ -192,59 +239,63 @@ impl eframe::App for MergerApp {
                         .add_filter("CSV file", &["csv", "CSV", "txt"])
                         .show_open_single_file()
                     {
-                        self.config.pad_map_path = path;
+                        self.config.pad_map_path = Some(path);
                     }
+                }
+                if ui.button("Default").clicked() {
+                    self.config.pad_map_path = None
                 }
                 ui.end_row();
 
                 ui.label("First Run Number");
-                ui.add(
-                    eframe::egui::widgets::DragValue::new(&mut self.config.first_run_number)
-                        .speed(1),
-                );
+                ui.add(DragValue::new(&mut self.config.first_run_number).speed(1));
                 ui.end_row();
 
                 ui.label("Last Run Number");
+                ui.add(DragValue::new(&mut self.config.last_run_number).speed(1));
+                ui.end_row();
+
+                ui.label("Number of Workers");
                 ui.add(
-                    eframe::egui::widgets::DragValue::new(&mut self.config.last_run_number)
-                        .speed(1),
+                    DragValue::new(&mut self.config.n_threads)
+                        .speed(1)
+                        .range(std::ops::RangeInclusive::new(1, 10)),
                 );
-                ui.end_row()
+                ui.end_row();
             });
 
             //Controls
             // You can only click run if there isn't already someone working
             if ui
-                .add_enabled(self.worker.is_none(), eframe::egui::Button::new("Run"))
+                .add_enabled(self.workers.is_empty(), eframe::egui::Button::new("Run"))
                 .clicked()
             {
-                log::info!("Starting processor...");
-                self.start_worker();
-            } else {
-                match self.worker.as_ref() {
-                    Some(worker) => {
-                        if worker.is_finished() {
-                            self.stop_worker()
-                        }
-                    }
-                    None => (),
-                }
+                spdlog::info!("Starting processor...");
+                self.start_workers();
+            } else if !self.are_any_workers_alive() {
+                self.stop_workers();
             }
 
-            //Progress Bar
+            //Progress Bars
             ui.separator();
             ui.label(
-                RichText::new("Progress")
+                RichText::new("Progress Per Worker")
                     .color(Color32::LIGHT_BLUE)
                     .size(18.0),
             );
-            ui.add(
-                eframe::egui::widgets::ProgressBar::new(match self.progress.lock() {
-                    Ok(x) => *x,
-                    Err(_) => 0.0,
-                })
-                .show_percentage(),
-            );
+            for (idx, status) in self.worker_statuses.iter().enumerate() {
+                match status.lock() {
+                    Ok(stat) => {
+                        ui.add(ProgressBar::new(stat.progress).text(format!(
+                            "Worker {} : Run {} - {}%",
+                            idx,
+                            stat.run_number,
+                            (stat.progress * 100.0) as i32
+                        )));
+                    },
+                    Err(e) => spdlog::warn!("An error occured trying to get the lock to Process {idx} status! Error: {e}")
+                }
+            }
 
             ctx.request_repaint_after(std::time::Duration::from_secs(1));
         });

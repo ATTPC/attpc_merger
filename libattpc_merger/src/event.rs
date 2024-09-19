@@ -49,17 +49,18 @@ impl Event {
             trace.move_into(&mut trace_slice);
         }
 
-        return data_matrix;
+        data_matrix
     }
 
-    /// Formated header array
-    pub fn get_header_array(&self) -> Array1<f64> {
-        ndarray::arr1(&[
-            self.event_id as f64,
-            self.timestamp as f64,
-            self.timestampother as f64,
-        ])
-    }
+    // Formated header array
+    // Now unused
+    // pub fn get_header_array(&self) -> Array1<f64> {
+    //     ndarray::arr1(&[
+    //         self.event_id as f64,
+    //         self.timestamp as f64,
+    //         self.timestampother as f64,
+    //     ])
+    // }
 
     /// Add a frame to the event.
     ///
@@ -104,7 +105,7 @@ impl Event {
             };
 
             // Put the data in the appropriate trace
-            match self.traces.get_mut(&hw_id) {
+            match self.traces.get_mut(hw_id) {
                 Some(trace) => {
                     trace[datum.time_bucket_id as usize] = datum.sample;
                 }

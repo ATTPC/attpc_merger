@@ -35,30 +35,48 @@
 
 mod app;
 use app::MergerApp;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 /// The program entry point
-#[allow(unreachable_code, dead_code)]
 fn main() {
-    simplelog::TermLogger::init(
-        simplelog::LevelFilter::Info,
-        simplelog::Config::default(),
-        simplelog::TerminalMode::Mixed,
-        simplelog::ColorChoice::Auto,
-    )
-    .unwrap();
+    // Setup logging to a file
+    let file_sink = Arc::new(
+        spdlog::sink::FileSink::builder()
+            .path(PathBuf::from("./attpc_merger.log"))
+            .formatter(Box::new(spdlog::formatter::PatternFormatter::new(
+                spdlog::formatter::pattern!(
+                    "[{date_short} {time_short}] - [thread: {tid}] - [{^{level}}] - {payload}{eol}"
+                ),
+            )))
+            .truncate(true)
+            .build()
+            .unwrap(),
+    );
+    let logger = Arc::new(
+        spdlog::Logger::builder()
+            .flush_level_filter(spdlog::LevelFilter::All)
+            .sink(file_sink)
+            .build()
+            .unwrap(),
+    );
+    spdlog::set_default_logger(logger);
+    spdlog::info!("Starting AT-TPC Merger UI");
 
-    let mut native_options = eframe::NativeOptions::default();
-    native_options.viewport = eframe::egui::ViewportBuilder::default()
-        .with_title("ATTPC Merger")
-        .with_inner_size(eframe::epaint::vec2(600.0, 300.0));
-    native_options.follow_system_theme = false;
+    let native_options = eframe::NativeOptions {
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_title("ATTPC Merger")
+            .with_inner_size(eframe::epaint::vec2(600.0, 400.0))
+            .with_min_inner_size(eframe::epaint::vec2(600.0, 300.0)),
+        follow_system_theme: false,
+        ..Default::default()
+    };
     match eframe::run_native(
         "attpc_merger",
         native_options,
         Box::new(|cc| Ok(Box::new(MergerApp::new(cc)))),
     ) {
         Ok(()) => (),
-        Err(e) => log::error!("Eframe error: {}", e),
+        Err(e) => spdlog::error!("Eframe error: {}", e),
     }
-    return;
 }

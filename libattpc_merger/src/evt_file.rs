@@ -31,14 +31,13 @@ impl EvtFile {
         }
 
         let file_path = path.to_path_buf();
-        let file = File::open(path)?;
-        let size_bytes = file.metadata()?.len();
-        let handle = file;
+        let file_handle = File::open(path)?;
+        let size_bytes = file_handle.metadata()?.len();
 
         Ok(EvtFile {
-            file_handle: handle,
+            file_handle,
             file_path,
-            size_bytes: size_bytes,
+            size_bytes,
             is_eof: false,
             is_open: true,
         })
@@ -46,7 +45,7 @@ impl EvtFile {
 
     /// Check if the file is still alive
     pub fn is_eof(&self) -> bool {
-        return self.is_eof;
+        self.is_eof
     }
 
     /// Retrieve the next RingItem from the buffer.
@@ -76,15 +75,11 @@ impl EvtFile {
             Err(e) => match e.kind() {
                 std::io::ErrorKind::UnexpectedEof => {
                     self.is_eof = true;
-                    return Err(EvtFileError::EndOfFile);
+                    Err(EvtFileError::EndOfFile)
                 }
-                _ => {
-                    return Err(EvtFileError::IOError(e));
-                }
+                _ => Err(EvtFileError::IOError(e)),
             },
-            Ok(()) => {
-                return Ok(RingItem::try_from(buffer)?);
-            }
+            Ok(()) => Ok(RingItem::try_from(buffer)?),
         }
     }
 }

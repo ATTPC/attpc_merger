@@ -10,29 +10,32 @@ pub struct Config {
     pub graw_path: PathBuf,
     pub evt_path: PathBuf,
     pub hdf_path: PathBuf,
-    pub pad_map_path: PathBuf,
+    pub pad_map_path: Option<PathBuf>,
     pub first_run_number: i32,
     pub last_run_number: i32,
     pub online: bool,
     pub experiment: String,
+    pub n_threads: i32,
 }
 
-impl Config {
-    #[allow(dead_code)]
+impl Default for Config {
     /// Generate a new Config object. All fields will be empty/invalid
-    pub fn default() -> Self {
+    fn default() -> Self {
         Self {
             graw_path: PathBuf::from("None"),
             evt_path: PathBuf::from("None"),
             hdf_path: PathBuf::from("None"),
-            pad_map_path: PathBuf::from("None"),
+            pad_map_path: None,
             first_run_number: 0,
             last_run_number: 0,
             online: false,
             experiment: String::from(""),
+            n_threads: 1,
         }
     }
+}
 
+impl Config {
     /// Read the configuration in a YAML file
     /// Returns a Config if successful
     pub fn read_config_file(config_path: &Path) -> Result<Self, ConfigError> {
@@ -61,21 +64,21 @@ impl Config {
         let mut run_dir: PathBuf = self.graw_path.join(self.get_run_str(run_number));
         run_dir = run_dir.join(format!("mm{}", cobo));
         if run_dir.exists() {
-            return Ok(run_dir);
+            Ok(run_dir)
         } else {
-            return Err(ConfigError::BadFilePath(run_dir));
+            Err(ConfigError::BadFilePath(run_dir))
         }
     }
 
     /// Get the path to the online data, assuming the standard AT-TPC Server configuration
     pub fn get_online_directory(&self, run_number: i32, cobo: &u8) -> Result<PathBuf, ConfigError> {
         let mut online_dir: PathBuf = PathBuf::new().join(format!("/Volumes/mm{}", cobo));
-        online_dir = online_dir.join(format!("{}", self.experiment));
+        online_dir = online_dir.join(&self.experiment);
         online_dir = online_dir.join(self.get_run_str(run_number));
         if online_dir.exists() {
-            return Ok(online_dir);
+            Ok(online_dir)
         } else {
-            return Err(ConfigError::BadFilePath(online_dir));
+            Err(ConfigError::BadFilePath(online_dir))
         }
     }
 
@@ -83,9 +86,9 @@ impl Config {
     pub fn get_evt_directory(&self, run_number: i32) -> Result<PathBuf, ConfigError> {
         let run_dir: PathBuf = self.evt_path.join(format!("run{}", run_number));
         if run_dir.exists() {
-            return Ok(run_dir);
+            Ok(run_dir)
         } else {
-            return Err(ConfigError::BadFilePath(run_dir));
+            Err(ConfigError::BadFilePath(run_dir))
         }
     }
 
@@ -95,14 +98,18 @@ impl Config {
             .hdf_path
             .join(format!("{}.h5", self.get_run_str(run_number)));
         if self.hdf_path.exists() {
-            return Ok(hdf_file_path);
+            Ok(hdf_file_path)
         } else {
-            return Err(ConfigError::BadFilePath(self.hdf_path.clone()));
+            Err(ConfigError::BadFilePath(self.hdf_path.clone()))
         }
     }
 
     /// Construct the run string using the AT-TPC DAQ format
     fn get_run_str(&self, run_number: i32) -> String {
-        return format!("run_{:0>4}", run_number);
+        format!("run_{:0>4}", run_number)
+    }
+
+    pub fn is_n_threads_valid(&self) -> bool {
+        self.n_threads >= 1
     }
 }

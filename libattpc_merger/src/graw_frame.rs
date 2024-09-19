@@ -6,23 +6,12 @@ use super::constants::*;
 use super::error::{GrawDataError, GrawFrameError};
 
 /// Data from a single time-bucket (sampled point along the waveform)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct GrawData {
     pub aget_id: u8,
     pub channel: u8,
     pub time_bucket_id: u16,
     pub sample: i16,
-}
-
-impl Default for GrawData {
-    fn default() -> Self {
-        GrawData {
-            aget_id: 0,
-            channel: 0,
-            time_bucket_id: 0,
-            sample: 0,
-        }
-    }
 }
 
 impl GrawData {
@@ -57,7 +46,7 @@ fn parse_bitsets(cursor: &mut Cursor<Vec<u8>>) -> Result<Vec<BitVec<u8>>, GrawFr
         sets.push(aget_bits);
     }
 
-    return Ok(sets);
+    Ok(sets)
 }
 
 /// Utility to parse the mulitplicity field of the graw header
@@ -69,7 +58,7 @@ fn parse_multiplicity(cursor: &mut Cursor<Vec<u8>>) -> Result<Vec<u16>, GrawFram
         mults.push(mult);
     }
 
-    return Ok(mults);
+    Ok(mults)
 }
 
 /// FrameMetadata provides the GrawFile a way of querying the event (hardware-level)
@@ -132,11 +121,10 @@ impl GrawFrameHeader {
         if self.header_size != EXPECTED_HEADER_SIZE {
             return Err(GrawFrameError::IncorrectHeaderSize(self.header_size));
         }
-        if self.frame_type == EXPECTED_FRAME_TYPE_FULL && self.item_size != EXPECTED_ITEM_SIZE_FULL
-        {
-            return Err(GrawFrameError::IncorrectItemSize(self.item_size));
-        } else if self.frame_type == EXPECTED_FRAME_TYPE_PARTIAL
-            && self.item_size != EXPECTED_ITEM_SIZE_PARTIAL
+        if (self.frame_type == EXPECTED_FRAME_TYPE_FULL
+            && self.item_size != EXPECTED_ITEM_SIZE_FULL)
+            || (self.frame_type == EXPECTED_FRAME_TYPE_PARTIAL
+                && self.item_size != EXPECTED_ITEM_SIZE_PARTIAL)
         {
             return Err(GrawFrameError::IncorrectItemSize(self.item_size));
         }
@@ -145,10 +133,9 @@ impl GrawFrameHeader {
             / (SIZE_UNIT as f64))
             .ceil() as u32;
         if self.frame_size != calc_frame_size {
-            log::warn!("When checking header for event {} for CoBo {} AsAd {}, the calculated size of the frame {} did not match the reported size {} of the frame! Defaulting to the reported size.",
+            spdlog::warn!("When checking header for event {} for CoBo {} AsAd {}, the calculated size of the frame {} did not match the reported size {} of the frame! Defaulting to the reported size.",
             self.event_id, self.cobo_id, self.asad_id, self.frame_size, calc_frame_size);
-            self.n_items = (self.frame_size as u32 * SIZE_UNIT
-                - self.header_size as u32 * SIZE_UNIT)
+            self.n_items = (self.frame_size * SIZE_UNIT - self.header_size as u32 * SIZE_UNIT)
                 / self.item_size as u32;
         }
         Ok(())
@@ -187,7 +174,7 @@ impl GrawFrameHeader {
 ///
 /// # Note
 /// Using 256 bit sizing is interesting because it often results in padding in both the body and the header. (It is done for performance reasons in the acquisition)
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct GrawFrame {
     pub header: GrawFrameHeader,
     hit_patterns: Vec<BitVec<u8>>,
@@ -225,13 +212,8 @@ impl TryFrom<Vec<u8>> for GrawFrame {
 
 impl GrawFrame {
     /// Default constructor
-    pub fn new() -> GrawFrame {
-        GrawFrame {
-            header: GrawFrameHeader::default(),
-            hit_patterns: vec![],
-            multiplicity: vec![],
-            data: vec![],
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Extract the data from the frame body if the
@@ -256,7 +238,7 @@ impl GrawFrame {
             match datum.check_data() {
                 Ok(()) => (),
                 Err(e) => {
-                    log::warn!("Error received while parsing frame partial data: {}. This datum will not be recorded.", e);
+                    spdlog::warn!("Error received while parsing frame partial data: {}. This datum will not be recorded.", e);
                     continue;
                 }
             }
@@ -265,7 +247,7 @@ impl GrawFrame {
         }
 
         if self.data.len() != (self.header.n_items as usize) {
-            log::warn!(
+            spdlog::warn!(
                 "A frame was read with an incorrect number of items -- Expected: {}, Found: {}",
                 self.header.n_items,
                 self.data.len()

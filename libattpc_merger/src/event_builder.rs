@@ -40,22 +40,22 @@ impl EventBuilder {
             self.current_event_id = frame.header.event_id;
             self.frame_stack.push(frame);
 
-            return Ok(Some(event));
+            Ok(Some(event))
         } else if self.current_event_id == 0 {
             // this is the first frame ever
             self.current_event_id = frame.header.event_id;
             self.frame_stack.push(frame);
-            return Ok(None);
+            Ok(None)
         } else if frame.header.event_id < self.current_event_id {
             //Oops out of order
-            return Err(EventBuilderError::EventOutOfOrder(
+            Err(EventBuilderError::EventOutOfOrder(
                 frame.header.event_id,
                 self.current_event_id,
-            ));
+            ))
         } else {
             //Still building
             self.frame_stack.push(frame);
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -64,7 +64,7 @@ impl EventBuilder {
     /// Used at the end of processing a run.
     /// Returns None if there were no frames left over.
     pub fn flush_final_event(&mut self) -> Option<Event> {
-        if self.frame_stack.len() != 0 {
+        if self.frame_stack.is_empty() {
             match Event::new(&self.pad_map, &self.frame_stack) {
                 Ok(event) => Some(event),
                 Err(_) => None,
