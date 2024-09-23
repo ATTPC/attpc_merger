@@ -1,14 +1,15 @@
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc;
 use std::thread::JoinHandle;
 
 use eframe::egui::{Color32, DragValue, ProgressBar, RichText};
 
 use libattpc_merger::config::Config;
 use libattpc_merger::error::ProcessorError;
-use libattpc_merger::process::{create_subsets, process_subset, ProcessStatus};
+use libattpc_merger::process::{create_subsets, process_subset};
+use libattpc_merger::worker_status::WorkerStatus;
 
 fn render_error_dialog(show: &mut bool, ctx: &eframe::egui::Context) {
     eframe::egui::Window::new("Error")
@@ -27,18 +28,23 @@ fn render_error_dialog(show: &mut bool, ctx: &eframe::egui::Context) {
 pub struct MergerApp {
     config: Config,
     workers: Vec<JoinHandle<Result<(), ProcessorError>>>, //processing thread
-    worker_statuses: Vec<Arc<Mutex<ProcessStatus>>>,
+    worker_statuses: Vec<WorkerStatus>,
     show_error_window: bool,
+    worker_rx: mpsc::Receiver<WorkerStatus>,
+    worker_tx: mpsc::Sender<WorkerStatus>,
 }
 
 impl MergerApp {
     /// Create the application
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        let (tx, rx) = mpsc::channel::<WorkerStatus>();
         MergerApp {
             config: Config::default(),
             workers: vec![],
             worker_statuses: vec![],
             show_error_window: false,
+            worker_rx: rx,
+            worker_tx: tx,
         }
     }
 
@@ -48,21 +54,18 @@ impl MergerApp {
         if self.workers.is_empty() {
             self.worker_statuses.clear();
             let subsets = create_subsets(&self.config);
-            for subset in subsets {
+            for (idx, subset) in subsets.into_iter().enumerate() {
                 // Dont make empty workers
                 if subset.is_empty() {
                     continue;
                 }
-                // Create all of this worker's info
-                let stat = Arc::new(Mutex::new(ProcessStatus {
-                    progress: 0.0,
-                    run_number: 0,
-                }));
                 // Spawn it
                 let conf = self.config.clone();
-                self.worker_statuses.push(stat.clone());
-                self.workers
-                    .push(std::thread::spawn(|| process_subset(conf, stat, subset)))
+                let tx = self.worker_tx.clone();
+                self.worker_statuses.push(WorkerStatus::new(0.0, 0, idx));
+                self.workers.push(std::thread::spawn(move || {
+                    process_subset(conf, tx, idx, subset)
+                }))
             }
         }
     }
@@ -120,6 +123,23 @@ impl MergerApp {
         }
     }
 
+    fn poll_messages(&mut self) {
+        // Check messages
+        loop {
+            match self.worker_rx.try_recv() {
+                Ok(status) => {
+                    let index = status.worker_id as usize;
+                    self.worker_statuses[index] = status;
+                }
+                Err(mpsc::TryRecvError::Empty) => break,
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    spdlog::error!("Channels became disconnected!");
+                    self.show_error_window = true;
+                }
+            }
+        }
+    }
+
     /// Read the Config from a file
     fn read_config(&mut self, path: &Path) {
         match Config::read_config_file(path) {
@@ -131,6 +151,7 @@ impl MergerApp {
 
 impl eframe::App for MergerApp {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        self.poll_messages();
         render_error_dialog(&mut self.show_error_window, ctx);
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             //Menus
@@ -283,18 +304,13 @@ impl eframe::App for MergerApp {
                     .color(Color32::LIGHT_BLUE)
                     .size(18.0),
             );
-            for (idx, status) in self.worker_statuses.iter().enumerate() {
-                match status.lock() {
-                    Ok(stat) => {
-                        ui.add(ProgressBar::new(stat.progress).text(format!(
-                            "Worker {} : Run {} - {}%",
-                            idx,
-                            stat.run_number,
-                            (stat.progress * 100.0) as i32
-                        )));
-                    },
-                    Err(e) => spdlog::warn!("An error occured trying to get the lock to Process {idx} status! Error: {e}")
-                }
+            for status in self.worker_statuses.iter() {
+                ui.add(ProgressBar::new(status.progress).text(format!(
+                    "Worker {} : Run {} - {}%",
+                    status.worker_id,
+                    status.run_number,
+                    (status.progress * 100.0) as i32
+                )));
             }
 
             ctx.request_repaint_after(std::time::Duration::from_secs(1));

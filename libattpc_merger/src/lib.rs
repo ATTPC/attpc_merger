@@ -93,3 +93,4 @@ pub mod merger;
 pub mod pad_map;
 pub mod process;
 pub mod ring_item;
+pub mod worker_status;
