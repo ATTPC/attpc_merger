@@ -128,8 +128,8 @@ impl MergerApp {
         loop {
             match self.worker_rx.try_recv() {
                 Ok(status) => {
-                    let index = status.worker_id as usize;
-                    self.worker_statuses[index] = status;
+                    let id = status.worker_id;
+                    self.worker_statuses[id] = status;
                 }
                 Err(mpsc::TryRecvError::Empty) => break,
                 Err(mpsc::TryRecvError::Disconnected) => {
