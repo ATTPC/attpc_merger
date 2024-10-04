@@ -9,7 +9,7 @@ use super::pad_map::PadMap;
 /// Event struct can then be sent to an HDFWriter to write merged events to disk.
 #[derive(Debug)]
 pub struct EventBuilder {
-    current_event_id: u32,
+    current_event_id: Option<u32>,
     pad_map: PadMap,
     frame_stack: Vec<GrawFrame>,
 }
@@ -20,7 +20,7 @@ impl EventBuilder {
     /// Requires a PadMap
     pub fn new(pad_map: PadMap) -> Self {
         EventBuilder {
-            current_event_id: 0,
+            current_event_id: None,
             pad_map,
             frame_stack: Vec::new(),
         }
@@ -33,27 +33,28 @@ impl EventBuilder {
     /// Returns a `Result<Option<Event>>`. If the Option is None, the event being built is not complete. If the Optiion is Some,
     /// the event being built was completed, and a new event was started for the frame that was passed in.
     pub fn append_frame(&mut self, frame: GrawFrame) -> Result<Option<Event>, EventBuilderError> {
-        if frame.header.event_id > self.current_event_id && self.current_event_id != 0 {
-            //event completed and start a new event.
-            let event: Event = Event::new(&self.pad_map, &self.frame_stack)?;
-            self.frame_stack.clear();
-            self.current_event_id = frame.header.event_id;
-            self.frame_stack.push(frame);
-
-            Ok(Some(event))
-        } else if self.current_event_id == 0 {
-            // this is the first frame ever
-            self.current_event_id = frame.header.event_id;
-            self.frame_stack.push(frame);
-            Ok(None)
-        } else if frame.header.event_id < self.current_event_id {
-            //Oops out of order
-            Err(EventBuilderError::EventOutOfOrder(
-                frame.header.event_id,
-                self.current_event_id,
-            ))
+        if let Some(current_id) = self.current_event_id {
+            if frame.header.event_id < current_id {
+                // Some how we recieved a frame from a past event
+                Err(EventBuilderError::EventOutOfOrder(
+                    frame.header.event_id,
+                    current_id,
+                ))
+            } else if frame.header.event_id > current_id {
+                // We recieved a frame from the next event; emit the built event and start a new one
+                let event = Event::new(&self.pad_map, &self.frame_stack)?;
+                self.frame_stack.clear();
+                self.current_event_id = Some(frame.header.event_id);
+                self.frame_stack.push(frame);
+                Ok(Some(event))
+            } else {
+                // We recieved a frame for this event
+                self.frame_stack.push(frame);
+                Ok(None)
+            }
         } else {
-            //Still building
+            // This is the first frame ever in history
+            self.current_event_id = Some(frame.header.event_id);
             self.frame_stack.push(frame);
             Ok(None)
         }
