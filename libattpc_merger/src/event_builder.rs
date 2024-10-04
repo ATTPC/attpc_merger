@@ -32,6 +32,7 @@ impl EventBuilder {
     /// this is taken as indication that that event is complete, and a new event should be started for the frame given.
     /// Returns a `Result<Option<Event>>`. If the Option is None, the event being built is not complete. If the Optiion is Some,
     /// the event being built was completed, and a new event was started for the frame that was passed in.
+    #[allow(clippy::comparison_chain)]
     pub fn append_frame(&mut self, frame: GrawFrame) -> Result<Option<Event>, EventBuilderError> {
         if let Some(current_id) = self.current_event_id {
             if frame.header.event_id < current_id {
