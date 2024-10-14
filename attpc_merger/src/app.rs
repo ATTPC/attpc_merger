@@ -160,7 +160,7 @@ impl eframe::App for MergerApp {
                 if ui.button("Open...").clicked() {
                     if let Some(path) = FileDialog::new()
                         .set_directory(
-                            &std::env::current_dir().expect("Couldn't access runtime directory"),
+                            std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
                         .add_filter("YAML file", &["yaml", "yml"])
                         .pick_file()
@@ -171,7 +171,7 @@ impl eframe::App for MergerApp {
                 if ui.button("Save...").clicked() {
                     if let Some(path) = FileDialog::new()
                         .set_directory(
-                            &std::env::current_dir().expect("Couldn't access runtime directory"),
+                            std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
                         .add_filter("YAML file", &["yaml", "yml"])
                         .save_file()
@@ -205,8 +205,7 @@ impl eframe::App for MergerApp {
                     if ui.button("Open...").clicked() {
                         if let Some(path) = FileDialog::new()
                             .set_directory(
-                                &std::env::current_dir()
-                                    .expect("Couldn't access runtime directory"),
+                                std::env::current_dir().expect("Couldn't access runtime directory"),
                             )
                             .pick_folder()
                         {
@@ -221,7 +220,7 @@ impl eframe::App for MergerApp {
                 if ui.button("Open...").clicked() {
                     if let Some(path) = FileDialog::new()
                         .set_directory(
-                            &std::env::current_dir().expect("Couldn't access evt directory"),
+                            std::env::current_dir().expect("Couldn't access evt directory"),
                         )
                         .pick_folder()
                     {
@@ -238,7 +237,7 @@ impl eframe::App for MergerApp {
                 if ui.button("Open...").clicked() {
                     if let Some(path) = FileDialog::new()
                         .set_directory(
-                            &std::env::current_dir().expect("Couldn't access runtime directory"),
+                            std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
                         .pick_folder()
                     {
@@ -256,7 +255,7 @@ impl eframe::App for MergerApp {
                 if ui.button("Open...").clicked() {
                     if let Some(path) = FileDialog::new()
                         .set_directory(
-                            &std::env::current_dir().expect("Couldn't access runtime directory"),
+                            std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
                         .add_filter("CSV file", &["csv", "CSV", "txt"])
                         .pick_file()
