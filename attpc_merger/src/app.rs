@@ -5,6 +5,7 @@ use std::sync::mpsc;
 use std::thread::JoinHandle;
 
 use eframe::egui::{Color32, DragValue, ProgressBar, RichText};
+use rfd::FileDialog;
 
 use libattpc_merger::config::Config;
 use libattpc_merger::error::ProcessorError;
@@ -157,23 +158,23 @@ impl eframe::App for MergerApp {
             //Menus
             ui.menu_button("File", |ui| {
                 if ui.button("Open...").clicked() {
-                    if let Ok(Some(path)) = native_dialog::FileDialog::new()
-                        .set_location(
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(
                             &std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
-                        .add_filter("YAML file", &["yaml"])
-                        .show_open_single_file()
+                        .add_filter("YAML file", &["yaml", "yml"])
+                        .pick_file()
                     {
                         self.read_config(&path);
                     }
                 }
                 if ui.button("Save...").clicked() {
-                    if let Ok(Some(path)) = native_dialog::FileDialog::new()
-                        .set_location(
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(
                             &std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
-                        .add_filter("YAML file", &["yaml"])
-                        .show_save_single_file()
+                        .add_filter("YAML file", &["yaml", "yml"])
+                        .save_file()
                     {
                         self.write_config(&path);
                     }
@@ -202,12 +203,12 @@ impl eframe::App for MergerApp {
                         self.config.graw_path.display()
                     ));
                     if ui.button("Open...").clicked() {
-                        if let Ok(Some(path)) = native_dialog::FileDialog::new()
-                            .set_location(
+                        if let Some(path) = FileDialog::new()
+                            .set_directory(
                                 &std::env::current_dir()
                                     .expect("Couldn't access runtime directory"),
                             )
-                            .show_open_single_dir()
+                            .pick_folder()
                         {
                             self.config.graw_path = path;
                         }
@@ -218,11 +219,11 @@ impl eframe::App for MergerApp {
                 //EVT directory
                 ui.label(format!("EVT directory: {}", self.config.evt_path.display()));
                 if ui.button("Open...").clicked() {
-                    if let Ok(Some(path)) = native_dialog::FileDialog::new()
-                        .set_location(
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(
                             &std::env::current_dir().expect("Couldn't access evt directory"),
                         )
-                        .show_open_single_dir()
+                        .pick_folder()
                     {
                         self.config.evt_path = path;
                     }
@@ -235,11 +236,11 @@ impl eframe::App for MergerApp {
                     self.config.hdf_path.display()
                 ));
                 if ui.button("Open...").clicked() {
-                    if let Ok(Some(path)) = native_dialog::FileDialog::new()
-                        .set_location(
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(
                             &std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
-                        .show_open_single_dir()
+                        .pick_folder()
                     {
                         self.config.hdf_path = path;
                     }
@@ -253,12 +254,12 @@ impl eframe::App for MergerApp {
                 };
                 ui.label(format!("Pad map: {}", map_render_text));
                 if ui.button("Open...").clicked() {
-                    if let Ok(Some(path)) = native_dialog::FileDialog::new()
-                        .set_location(
+                    if let Some(path) = FileDialog::new()
+                        .set_directory(
                             &std::env::current_dir().expect("Couldn't access runtime directory"),
                         )
                         .add_filter("CSV file", &["csv", "CSV", "txt"])
-                        .show_open_single_file()
+                        .pick_file()
                     {
                         self.config.pad_map_path = Some(path);
                     }

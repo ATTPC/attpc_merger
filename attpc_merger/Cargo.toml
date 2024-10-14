@@ -9,8 +9,8 @@ authors.workspace = true
 
 [dependencies]
 libattpc_merger.workspace = true
-eframe = "0.29.0"
-native-dialog = { version = "0.7.0", features = ["windows_dpi_awareness"] }
+eframe = "0.29.1"
 spdlog-rs.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
+rfd = "0.15.0"
