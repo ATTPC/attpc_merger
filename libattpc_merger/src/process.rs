@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Sender;
 
 use super::ring_item::{BeginRunItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem};
 
@@ -11,12 +11,7 @@ use super::evt_stack::EvtStack;
 use super::hdf_writer::HDFWriter;
 use super::merger::Merger;
 use super::pad_map::PadMap;
-
-#[derive(Debug, Clone)]
-pub struct ProcessStatus {
-    pub progress: f32,
-    pub run_number: i32,
-}
+use super::worker_status::WorkerStatus;
 
 /// The final event of the EventBuilder will need a manual flush
 fn flush_final_event(
@@ -77,7 +72,8 @@ fn process_evt_data(evt_path: PathBuf, writer: &mut HDFWriter) -> Result<(), Pro
 pub fn process_run(
     config: &Config,
     run_number: i32,
-    status: &Arc<Mutex<ProcessStatus>>,
+    tx: &Sender<WorkerStatus>,
+    worker_id: &usize,
 ) -> Result<(), ProcessorError> {
     let hdf_path = config.get_hdf_file_name(run_number)?;
     let pad_map = PadMap::new(config.pad_map_path.as_deref())?;
@@ -94,6 +90,7 @@ pub fn process_run(
     let total_data_size = merger.get_total_data_size();
     let flush_frac: f32 = 0.01;
     let mut count = 0;
+    let mut progress: f32 = 0.0;
     let flush_val = (*total_data_size as f64 * flush_frac as f64) as u64;
 
     // Handle evt data if present
@@ -124,9 +121,8 @@ pub fn process_run(
             count += (frame.header.frame_size * SIZE_UNIT) as u64;
             if count > flush_val {
                 count = 0;
-                if let Ok(mut stat) = status.lock() {
-                    stat.progress += flush_frac;
-                }
+                progress += flush_frac;
+                tx.send(WorkerStatus::new(progress, run_number, *worker_id))?;
             }
 
             if let Some(event) = evb.append_frame(frame)? {
@@ -141,9 +137,8 @@ pub fn process_run(
             break;
         }
     }
-    if let Ok(mut stat) = status.lock() {
-        stat.progress = 1.0;
-    }
+
+    tx.send(WorkerStatus::new(1.0, run_number, *worker_id))?;
     spdlog::info!("Done with get data.");
 
     Ok(())
@@ -153,15 +148,16 @@ pub fn process_run(
 /// This particular flavor is unused by the default tools (attpc_merger and attpc_merger_cli)
 /// but could be useful to someone else
 /// Allows multiple runs to be processed
-pub fn process(config: Config, status: Arc<Mutex<ProcessStatus>>) -> Result<(), ProcessorError> {
+pub fn process(
+    config: Config,
+    tx: Sender<WorkerStatus>,
+    worker_id: usize,
+) -> Result<(), ProcessorError> {
     for run in config.first_run_number..(config.last_run_number + 1) {
-        if let Ok(mut stat) = status.lock() {
-            stat.progress = 0.0;
-            stat.run_number = run;
-        }
+        tx.send(WorkerStatus::new(0.0, run, worker_id))?;
         if config.does_run_exist(run) {
             spdlog::info!("Processing run {}...", run);
-            process_run(&config, run, &status)?;
+            process_run(&config, run, &tx, &worker_id)?;
             spdlog::info!("Finished processing run {}.", run);
         } else {
             spdlog::info!("Run {} does not exist, skipping...", run);
@@ -173,17 +169,15 @@ pub fn process(config: Config, status: Arc<Mutex<ProcessStatus>>) -> Result<(), 
 /// Process a subset of runs
 pub fn process_subset(
     config: Config,
-    status: Arc<Mutex<ProcessStatus>>,
+    tx: Sender<WorkerStatus>,
+    worker_id: usize,
     subset: Vec<i32>,
 ) -> Result<(), ProcessorError> {
     for run in subset {
-        if let Ok(mut stat) = status.lock() {
-            stat.progress = 0.0;
-            stat.run_number = run;
-        }
+        tx.send(WorkerStatus::new(0.0, run, worker_id))?;
         if config.does_run_exist(run) {
             spdlog::info!("Processing run {}...", run);
-            process_run(&config, run, &status)?;
+            process_run(&config, run, &tx, &worker_id)?;
             spdlog::info!("Finished processing run {}.", run);
         } else {
             spdlog::info!("Run {} does not exist, skipping...", run);

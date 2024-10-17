@@ -68,7 +68,6 @@ fn main() {
             .with_title("ATTPC Merger")
             .with_inner_size(eframe::epaint::vec2(600.0, 400.0))
             .with_min_inner_size(eframe::epaint::vec2(600.0, 300.0)),
-        follow_system_theme: false,
         ..Default::default()
     };
     match eframe::run_native(

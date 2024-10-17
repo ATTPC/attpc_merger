@@ -3,6 +3,7 @@ use std::fmt::Display;
 use std::path::PathBuf;
 
 use super::constants::*;
+use super::worker_status::WorkerStatus;
 
 /*
    GrawData errors
@@ -495,6 +496,7 @@ pub enum ProcessorError {
     MapError(PadMapError),
     EvtError(EvtStackError),
     BadRingConversion(EvtItemError),
+    SendError(std::sync::mpsc::SendError<WorkerStatus>),
 }
 
 impl From<MergerError> for ProcessorError {
@@ -539,6 +541,12 @@ impl From<EvtItemError> for ProcessorError {
     }
 }
 
+impl From<std::sync::mpsc::SendError<WorkerStatus>> for ProcessorError {
+    fn from(value: std::sync::mpsc::SendError<WorkerStatus>) -> Self {
+        Self::SendError(value)
+    }
+}
+
 impl Display for ProcessorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -550,6 +558,9 @@ impl Display for ProcessorError {
             Self::EvtError(e) => write!(f, "Processor failed due to evt stack error: {}", e),
             Self::BadRingConversion(e) => {
                 write!(f, "Processor failed due to bad ring item conversion: {}", e)
+            }
+            Self::SendError(e) => {
+                write!(f, "Processor failed to send status: {}", e)
             }
         }
     }

@@ -41,11 +41,11 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc};
 
 use libattpc_merger::config::Config;
-//use libattpc_merger::process::{create_subsets, process, process_subset};
-use libattpc_merger::process::{create_subsets, process_subset, ProcessStatus};
+use libattpc_merger::process::{create_subsets, process_subset};
+use libattpc_merger::worker_status::WorkerStatus;
 
 fn make_template_config(path: &Path) {
     let config = Config::default();
@@ -147,8 +147,8 @@ fn main() {
 
     // Setup the progress bar, statuses, and workers
     let mut progress_bars = vec![];
-    let mut statuses = vec![];
     let mut handles = vec![];
+    let (tx, rx) = mpsc::channel::<WorkerStatus>();
 
     // Split the runs into subsets for each worker
     let subsets = create_subsets(&config);
@@ -160,10 +160,6 @@ fn main() {
             continue;
         }
         // Create all of this worker's info
-        let stat = Arc::new(Mutex::new(ProcessStatus {
-            progress: 0.0,
-            run_number: 0,
-        }));
         let bar = pb_manager.add(
             ProgressBar::new(100)
                 .with_style(
@@ -176,26 +172,30 @@ fn main() {
         );
         // Spawn it
         let conf = config.clone();
+        let this_tx = tx.clone();
         progress_bars.push(bar);
-        statuses.push(stat.clone());
-        handles.push(std::thread::spawn(|| process_subset(conf, stat, set)))
+        handles.push(std::thread::spawn(move || {
+            process_subset(conf, this_tx, id, set)
+        }))
     }
 
     loop {
         // Ugh since we don't have a UI here, I manually sleep for ~ 1 sec before trying to update
         std::thread::sleep(std::time::Duration::from_secs(1));
-        // Update our progress bars with info from the workers
-        for (idx, bar) in progress_bars.iter().enumerate() {
-            let status = &statuses[idx];
-            match status.lock() {
-                Ok(stat) => {
-                    bar.set_position((stat.progress * 100.0) as u64);
-                    bar.set_message(format!("Worker {}: Run {}", idx, stat.run_number));
-                }
-                Err(e) => {
-                    error_occured = true;
-                    spdlog::error!("{e}");
-                }
+        match rx.try_recv() {
+            Ok(status) => {
+                let bar = &progress_bars[status.worker_id];
+                bar.set_position((status.progress * 100.0) as u64);
+                bar.set_message(format!(
+                    "Worker {}: Run {}",
+                    status.worker_id, status.run_number
+                ));
+            }
+            Err(mpsc::TryRecvError::Empty) => continue,
+            Err(mpsc::TryRecvError::Disconnected) => {
+                spdlog::error!("All of the communication channels were disconnected!");
+                error_occured = true;
+                break;
             }
         }
 
