@@ -18,6 +18,8 @@ const FRIB_PHYSICS_NAME: &str = "frib_physics";
 
 // All event counters start from 0 by law
 const START_EVENT_NUMBER: u32 = 0;
+/// This is the version of the output format
+const FORMAT_VERSION: &str = "1.0";
 
 /// A simple struct which wraps around the hdf5-rust library.
 ///
@@ -54,7 +56,7 @@ impl HDFWriter {
         let run_path = path.file_stem().unwrap();
         let parent_file_path = stem.join(format!("{}.yml", run_path.to_string_lossy()));
 
-        let merger_version = format!("{}:{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+        let merger_version = format!("{}:{}", env!("CARGO_PKG_NAME"), FORMAT_VERSION);
 
         let events_group = file_handle.create_group(EVENTS_NAME)?;
         events_group.new_attr::<u64>().create("min_event")?;

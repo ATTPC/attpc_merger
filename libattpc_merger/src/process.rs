@@ -21,8 +21,10 @@ fn flush_final_event(
 ) -> Result<(), ProcessorError> {
     if let Some(event) = evb.flush_final_event() {
         writer.write_event(event, event_counter)?;
-        writer.close()?;
+    } else {
+        spdlog::warn!("Last event was not flushed successfully!")
     }
+    writer.close()?;
     Ok(())
 }
 

@@ -66,7 +66,7 @@ impl EventBuilder {
     /// Used at the end of processing a run.
     /// Returns None if there were no frames left over.
     pub fn flush_final_event(&mut self) -> Option<Event> {
-        if self.frame_stack.is_empty() {
+        if !self.frame_stack.is_empty() {
             match Event::new(&self.pad_map, &self.frame_stack) {
                 Ok(event) => Some(event),
                 Err(_) => None,
