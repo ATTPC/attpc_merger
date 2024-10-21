@@ -18,6 +18,7 @@ const FRIB_PHYSICS_NAME: &str = "frib_physics";
 
 // All event counters start from 0 by law
 const START_EVENT_NUMBER: u32 = 0;
+/// This is the version of the output format
 const FORMAT_VERSION: &str = "1.0";
 
 /// A simple struct which wraps around the hdf5-rust library.

@@ -528,7 +528,7 @@ dependencies = [
 
 [[package]]
 name = "attpc_merger"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "eframe",
  "libattpc_merger",
@@ -540,7 +540,7 @@ dependencies = [
 
 [[package]]
 name = "attpc_merger_cli"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "clap",
  "indicatif",
@@ -1892,7 +1892,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libattpc_merger"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bit-set 0.8.0",
  "bitvec",
