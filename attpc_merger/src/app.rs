@@ -38,6 +38,9 @@ pub struct MergerApp {
 impl MergerApp {
     /// Create the application
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        let mut visuals = eframe::egui::Visuals::dark();
+        visuals.override_text_color = Some(Color32::LIGHT_GRAY);
+        cc.egui_ctx.set_visuals(visuals);
         cc.egui_ctx.set_theme(eframe::egui::Theme::Dark);
         let (tx, rx) = mpsc::channel::<WorkerStatus>();
         MergerApp {
