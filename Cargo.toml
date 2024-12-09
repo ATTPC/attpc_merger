@@ -26,5 +26,5 @@ human_bytes = "0.4.3"
 ndarray = "0.16.1"
 serde = { version = "1.0.215", features = ["derive"] }
 serde_yaml = "0.9.34"
-time = "0.3.36"
+time = "0.3.37"
 spdlog-rs = "0.3.13"
