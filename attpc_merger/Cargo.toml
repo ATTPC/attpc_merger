@@ -9,7 +9,7 @@ authors.workspace = true
 
 [dependencies]
 libattpc_merger.workspace = true
-eframe = "0.29.1"
+eframe = "0.30.0"
 spdlog-rs.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
