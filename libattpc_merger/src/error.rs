@@ -279,40 +279,108 @@ impl Display for AsadStackError {
 
 impl Error for AsadStackError {}
 
-/*
-   PadMap errors
-*/
-
 #[derive(Debug)]
-pub enum PadMapError {
-    IOError(std::io::Error),
-    ParsingError(std::num::ParseIntError),
-    BadFileFormat,
+pub enum SiError {
+    Detector(String),
+    Side(String),
 }
 
-impl From<std::io::Error> for PadMapError {
-    fn from(value: std::io::Error) -> Self {
-        PadMapError::IOError(value)
-    }
-}
-
-impl From<std::num::ParseIntError> for PadMapError {
-    fn from(value: std::num::ParseIntError) -> Self {
-        PadMapError::ParsingError(value)
-    }
-}
-
-impl Display for PadMapError {
+impl Display for SiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PadMapError::IOError(e) => write!(f, "PadMap recieved an io error: {}", e),
-            PadMapError::ParsingError(e) => write!(f, "PadMap error recieved a parsing error: {}", e),
-            PadMapError::BadFileFormat => write!(f, "PadMap found a bad file format while reading the map file! Expected .csv without whitespaces")
+            Self::Detector(s) => write!(f, "Invalid Si detector string {s}"),
+            Self::Side(s) => write!(f, "Invalid Si detector string {s}"),
         }
     }
 }
 
-impl Error for PadMapError {}
+impl Error for SiError {}
+
+/*
+   GetChannelMap errors
+*/
+
+#[derive(Debug)]
+pub enum GetChannelMapError {
+    IOError(std::io::Error),
+    ParsingError(std::num::ParseIntError),
+    SiliconError(SiError),
+    BadFileFormat,
+}
+
+impl From<std::io::Error> for GetChannelMapError {
+    fn from(value: std::io::Error) -> Self {
+        Self::IOError(value)
+    }
+}
+
+impl From<std::num::ParseIntError> for GetChannelMapError {
+    fn from(value: std::num::ParseIntError) -> Self {
+        Self::ParsingError(value)
+    }
+}
+
+impl From<SiError> for GetChannelMapError {
+    fn from(value: SiError) -> Self {
+        Self::SiliconError(value)
+    }
+}
+
+impl Display for GetChannelMapError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::IOError(e) => write!(f, "GetChannelMap recieved an io error: {}", e),
+            Self::ParsingError(e) => write!(f, "GetChannelMap error recieved a parsing error: {}", e),
+            Self::BadFileFormat => write!(f, "GetChannelMap found a bad file format while reading the map file! Expected .csv without whitespaces"),
+            Self::SiliconError(e) => write!(f, "GetChannelMap failed trying to parse silicon detector info: {e}")
+        }
+    }
+}
+
+impl Error for GetChannelMapError {}
+
+/*
+   GetChannelMap errors
+*/
+
+#[derive(Debug)]
+pub enum SiliconMapError {
+    IOError(std::io::Error),
+    ParsingError(std::num::ParseIntError),
+    BadFileFormat,
+    InvalidDescriptor(SiError),
+}
+
+impl From<std::io::Error> for SiliconMapError {
+    fn from(value: std::io::Error) -> Self {
+        Self::IOError(value)
+    }
+}
+
+impl From<std::num::ParseIntError> for SiliconMapError {
+    fn from(value: std::num::ParseIntError) -> Self {
+        Self::ParsingError(value)
+    }
+}
+
+impl From<SiError> for SiliconMapError {
+    fn from(value: SiError) -> Self {
+        Self::InvalidDescriptor(value)
+    }
+}
+
+impl Display for SiliconMapError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::IOError(e) => write!(f, "SiliconMap recieved an io error: {}", e),
+            Self::ParsingError(e) => write!(f, "SiliconMap error recieved a parsing error: {}", e),
+            Self::BadFileFormat => write!(f, "SiliconMap found a bad file format while reading the map file! Expected .csv without whitespaces"),
+            Self::InvalidDescriptor(e) => write!(f, "SiliconMap failed to parse a detector descriptor: {e}"),
+        }
+    }
+}
+
+impl Error for SiliconMapError {}
 
 /*
    Event errors
@@ -493,7 +561,7 @@ pub enum ProcessorError {
     MergerError(MergerError),
     HDFError(HDF5WriterError),
     ConfigError(ConfigError),
-    MapError(PadMapError),
+    MapError(GetChannelMapError),
     EvtError(EvtStackError),
     BadRingConversion(EvtItemError),
     SendError(std::sync::mpsc::SendError<WorkerStatus>),
@@ -523,8 +591,8 @@ impl From<ConfigError> for ProcessorError {
     }
 }
 
-impl From<PadMapError> for ProcessorError {
-    fn from(value: PadMapError) -> Self {
+impl From<GetChannelMapError> for ProcessorError {
+    fn from(value: GetChannelMapError) -> Self {
         Self::MapError(value)
     }
 }
@@ -554,7 +622,7 @@ impl Display for ProcessorError {
             Self::MergerError(e) => write!(f, "Processor failed at Merger with error: {}", e),
             Self::HDFError(e) => write!(f, "Processor failed at HDFWriter with error: {}", e),
             Self::ConfigError(e) => write!(f, "Processor failed due to Configuration error: {}", e),
-            Self::MapError(e) => write!(f, "Processor failed due to PadMap error: {}", e),
+            Self::MapError(e) => write!(f, "Processor failed due to GetChannelMap error: {}", e),
             Self::EvtError(e) => write!(f, "Processor failed due to evt stack error: {}", e),
             Self::BadRingConversion(e) => {
                 write!(f, "Processor failed due to bad ring item conversion: {}", e)

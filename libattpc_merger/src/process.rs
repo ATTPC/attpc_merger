@@ -3,6 +3,7 @@ use std::sync::mpsc::Sender;
 
 use super::ring_item::{BeginRunItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem};
 
+use super::channel_map::GetChannelMap;
 use super::config::Config;
 use super::constants::SIZE_UNIT;
 use super::error::ProcessorError;
@@ -10,7 +11,6 @@ use super::event_builder::EventBuilder;
 use super::evt_stack::EvtStack;
 use super::hdf_writer::HDFWriter;
 use super::merger::Merger;
-use super::pad_map::PadMap;
 use super::worker_status::WorkerStatus;
 
 /// The final event of the EventBuilder will need a manual flush
@@ -78,7 +78,7 @@ pub fn process_run(
     worker_id: &usize,
 ) -> Result<(), ProcessorError> {
     let hdf_path = config.get_hdf_file_name(run_number)?;
-    let pad_map = PadMap::new(config.pad_map_path.as_deref())?;
+    let pad_map = GetChannelMap::new(config.pad_map_path.as_deref())?;
 
     //Initialize the merger, event builder, and hdf writer
     let mut merger = Merger::new(config, run_number)?;

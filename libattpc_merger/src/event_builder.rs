@@ -1,7 +1,7 @@
+use super::channel_map::GetChannelMap;
 use super::error::EventBuilderError;
 use super::event::Event;
 use super::graw_frame::GrawFrame;
-use super::pad_map::PadMap;
 
 /// EventBuilder takes GrawFrames and composes them into Events.
 ///
@@ -10,15 +10,15 @@ use super::pad_map::PadMap;
 #[derive(Debug)]
 pub struct EventBuilder {
     current_event_id: Option<u32>,
-    pad_map: PadMap,
+    pad_map: GetChannelMap,
     frame_stack: Vec<GrawFrame>,
 }
 
 impl EventBuilder {
     /// Create a new EventBuilder.
     ///
-    /// Requires a PadMap
-    pub fn new(pad_map: PadMap) -> Self {
+    /// Requires a GetChannelMap
+    pub fn new(pad_map: GetChannelMap) -> Self {
         EventBuilder {
             current_event_id: None,
             pad_map,
