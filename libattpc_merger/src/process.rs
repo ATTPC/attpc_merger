@@ -114,7 +114,7 @@ pub fn process_run(
 
     //Handle the get data
     spdlog::info!("Processing get data...");
-    writer.write_fileinfo(&merger).unwrap();
+    writer.write_fileinfo(&merger)?;
     let mut event_counter = 0;
     loop {
         if let Some(frame) = merger.get_next_frame()? {
