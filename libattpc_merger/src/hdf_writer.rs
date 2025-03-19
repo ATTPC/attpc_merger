@@ -162,7 +162,7 @@ impl HDFWriter {
             let mut size_list = file_list.clone();
             size_list[0] =
                 human_bytes::human_bytes(stack.get_active_file().get_size_bytes() as f64); // Active file is the first one
-            file_list[0] = String::from(stack.get_active_file().get_filename().to_str().unwrap());
+            file_list[0] = String::from(stack.get_active_file().get_filename().to_string_lossy());
             for (row, path) in file_stack.iter().enumerate() {
                 size_list[row + 1] =
                     human_bytes::human_bytes(path.metadata().unwrap().len() as f64);
