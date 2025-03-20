@@ -24,7 +24,7 @@ use super::hardware_id::{generate_uuid, HardwareID};
 
 const MIN_ENTRIES_PER_LINE: usize = 4; //Min number of elements (cobo, asad, aget, ch)
 const PAD_ENTRIES_PER_LINE: usize = 5; //Number of elements in a single row in the CSV file
-const SI_ENTRIES_PER_LINE: usize = 7; //Number of elements in a single row in the CSV file
+const SI_ENTRIES_PER_LINE: usize = 6; //Number of elements in a single row in the CSV file
 
 /// Load the default map for windows
 #[cfg(target_family = "windows")]
@@ -85,8 +85,7 @@ impl GetChannelMap {
             if entries.len() == PAD_ENTRIES_PER_LINE {
                 det_info = Detector::Pad(entries[4].parse()?);
             } else if entries.len() == SI_ENTRIES_PER_LINE {
-                det_info =
-                    Detector::Silicon(SiliconID::new(entries[4], entries[5], entries[6].parse()?)?);
+                det_info = Detector::Silicon(SiliconID::new(entries[4], entries[5].parse()?)?);
             } else {
                 return Err(GetChannelMapError::BadFileFormat);
             }
