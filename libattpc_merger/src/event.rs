@@ -1,8 +1,11 @@
 use fxhash::FxHashMap;
 use ndarray::{s, Array1, Array2};
 
+use crate::constants::SAMPLE_COLUMN_OFFSET;
+use crate::hardware_id::{Detector, SiDetector};
+
 use super::channel_map::GetChannelMap;
-use super::constants::*;
+use super::constants::{COBO_WITH_TIMESTAMP, FPN_CHANNELS, NUMBER_OF_MATRIX_COLUMNS};
 use super::error::EventError;
 use super::graw_frame::GrawFrame;
 use super::hardware_id::HardwareID;
@@ -14,7 +17,11 @@ use super::hardware_id::HardwareID;
 #[derive(Debug)]
 pub struct Event {
     nframes: i32,
-    traces: FxHashMap<HardwareID, Array1<i16>>, //maps pad id to the trace for that pad
+    pad_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    upfront_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    upback_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    downfront_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    downback_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
     pub timestamp: u64,
     pub timestampother: u64,
     pub event_id: u32,
@@ -25,7 +32,11 @@ impl Event {
     pub fn new(pad_map: &GetChannelMap, frames: &Vec<GrawFrame>) -> Result<Self, EventError> {
         let mut event = Event {
             nframes: 0,
-            traces: FxHashMap::default(),
+            pad_traces: FxHashMap::default(),
+            upfront_si_traces: FxHashMap::default(),
+            upback_si_traces: FxHashMap::default(),
+            downfront_si_traces: FxHashMap::default(),
+            downback_si_traces: FxHashMap::default(),
             timestamp: 0,
             timestampother: 0,
             event_id: 0,
@@ -38,14 +49,22 @@ impl Event {
     }
 
     /// Convert the event traces to a data matrix for writing to disk. Follows format used by AT-TPC analysis
-    pub fn convert_to_data_matrix(self) -> Array2<i16> {
-        let mut data_matrix = Array2::<i16>::zeros([self.traces.len(), NUMBER_OF_MATRIX_COLUMNS]);
-        for (row, (hw_id, trace)) in self.traces.into_iter().enumerate() {
-            data_matrix[[row, 0]] = hw_id.cobo_id as i16;
-            data_matrix[[row, 1]] = hw_id.asad_id as i16;
-            data_matrix[[row, 2]] = hw_id.aget_id as i16;
-            data_matrix[[row, 3]] = hw_id.channel as i16;
-            data_matrix[[row, 4]] = hw_id.pad_id as i16;
+    pub fn get_pad_data_matrix(&self) -> Array2<i16> {
+        todo!();
+        let mut data_matrix =
+            Array2::<i16>::zeros([self.pad_traces.len(), NUMBER_OF_MATRIX_COLUMNS]);
+        for (row, (_hw_id, trace)) in self.pad_traces.iter().enumerate() {
+            let mut trace_slice = data_matrix.slice_mut(s![row, ..]);
+            trace_slice.copy_from_slice()
+        }
+
+        data_matrix
+    }
+
+    pub fn get_upstream_front_silicon_data_matrix(&self) -> Array2<i16> {
+        let mut data_matrix =
+            Array2::<i16>::zeros([self.upfront_si_traces.len(), NUMBER_OF_MATRIX_COLUMNS]);
+        for (row, (_hw_id, trace)) in self.upfront_si_traces.iter().enumerate() {
             let mut trace_slice = data_matrix.slice_mut(s![row, 5..NUMBER_OF_MATRIX_COLUMNS]);
             trace.move_into(&mut trace_slice);
         }
@@ -53,22 +72,45 @@ impl Event {
         data_matrix
     }
 
-    // Formated header array
-    // Now unused
-    // pub fn get_header_array(&self) -> Array1<f64> {
-    //     ndarray::arr1(&[
-    //         self.event_id as f64,
-    //         self.timestamp as f64,
-    //         self.timestampother as f64,
-    //     ])
-    // }
+    pub fn get_upstream_back_silicon_data_matrix(&self) -> Array2<i16> {
+        let mut data_matrix =
+            Array2::<i16>::zeros([self.upback_si_traces.len(), NUMBER_OF_MATRIX_COLUMNS]);
+        for (row, (_hw_id, trace)) in self.upback_si_traces.iter().enumerate() {
+            let mut trace_slice = data_matrix.slice_mut(s![row, 5..NUMBER_OF_MATRIX_COLUMNS]);
+            trace.move_into(&mut trace_slice);
+        }
+
+        data_matrix
+    }
+
+    pub fn get_downstream_front_silicon_data_matrix(&self) -> Array2<i16> {
+        let mut data_matrix =
+            Array2::<i16>::zeros([self.downfront_si_traces.len(), NUMBER_OF_MATRIX_COLUMNS]);
+        for (row, (_hw_id, trace)) in self.downfront_si_traces.iter().enumerate() {
+            let mut trace_slice = data_matrix.slice_mut(s![row, 5..NUMBER_OF_MATRIX_COLUMNS]);
+            trace.move_into(&mut trace_slice);
+        }
+
+        data_matrix
+    }
+
+    pub fn get_downstream_back_silicon_data_matrix(&self) -> Array2<i16> {
+        let mut data_matrix =
+            Array2::<i16>::zeros([self.downback_si_traces.len(), NUMBER_OF_MATRIX_COLUMNS]);
+        for (row, (_hw_id, trace)) in self.downback_si_traces.iter().enumerate() {
+            let mut trace_slice = data_matrix.slice_mut(s![row, 5..NUMBER_OF_MATRIX_COLUMNS]);
+            trace.move_into(&mut trace_slice);
+        }
+
+        data_matrix
+    }
 
     /// Add a frame to the event.
     ///
     /// If the frame does not belong to this event, an error is returned
     fn append_frame(
         &mut self,
-        pad_map: &GetChannelMap,
+        channel_map: &GetChannelMap,
         frame: &GrawFrame,
     ) -> Result<(), EventError> {
         // Check if this is the first frame or that the event id's match
@@ -97,7 +139,7 @@ impl Event {
             }
 
             // Get the hardware ID
-            hw_id = match pad_map.get_hardware_id(
+            hw_id = match channel_map.get_hardware_id(
                 &frame.header.cobo_id,
                 &frame.header.asad_id,
                 &datum.aget_id,
@@ -105,21 +147,59 @@ impl Event {
             ) {
                 Some(hw) => hw,
                 None => {
+                    spdlog::warn!(
+                        "Unregistered GET channel -- CoBo: {} AsAd: {} AGET: {} Channel: {}",
+                        frame.header.cobo_id,
+                        frame.header.asad_id,
+                        datum.aget_id,
+                        datum.channel
+                    );
                     continue;
                 }
             };
 
             // Put the data in the appropriate trace
-            match self.traces.get_mut(hw_id) {
-                Some(trace) => {
-                    trace[datum.time_bucket_id as usize] = datum.sample;
-                }
-                None => {
-                    //First time this pad found during event. Create a new array
-                    let mut trace: Array1<i16> =
-                        Array1::<i16>::zeros(NUMBER_OF_TIME_BUCKETS as usize);
-                    trace[datum.time_bucket_id as usize] = datum.sample;
-                    self.traces.insert(hw_id.clone(), trace);
+            match &hw_id.detector {
+                Detector::Pad(p) => match self.pad_traces.get_mut(&p) {
+                    Some(trace) => {
+                        trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample
+                    }
+                    None => {
+                        let mut trace: Array1<i16> = Array1::<i16>::zeros(NUMBER_OF_MATRIX_COLUMNS);
+                        trace[0] = hw_id.cobo_id as i16;
+                        trace[1] = hw_id.asad_id as i16;
+                        trace[2] = hw_id.aget_id as i16;
+                        trace[3] = hw_id.channel as i16;
+                        trace[5] = *p as i16;
+                        trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample;
+                    }
+                },
+                Detector::Silicon(s) => {
+                    let det_map: &mut FxHashMap<usize, Array1<i16>>;
+                    match s.kind {
+                        SiDetector::UpstreamFront => det_map = &mut self.upfront_si_traces,
+                        SiDetector::UpstreamBack => det_map = &mut self.upback_si_traces,
+                        SiDetector::DownstreamBack => det_map = &mut self.downback_si_traces,
+                        SiDetector::DownstreamFront => det_map = &mut self.downfront_si_traces,
+                    }
+
+                    match det_map.get_mut(&s.channel) {
+                        Some(trace) => {
+                            trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] =
+                                datum.sample
+                        }
+                        None => {
+                            let mut trace: Array1<i16> =
+                                Array1::<i16>::zeros(NUMBER_OF_MATRIX_COLUMNS);
+                            trace[0] = hw_id.cobo_id as i16;
+                            trace[1] = hw_id.asad_id as i16;
+                            trace[2] = hw_id.aget_id as i16;
+                            trace[3] = hw_id.channel as i16;
+                            trace[5] = s.channel as i16;
+                            trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] =
+                                datum.sample;
+                        }
+                    }
                 }
             }
         }

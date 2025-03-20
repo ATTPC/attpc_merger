@@ -4,38 +4,25 @@ use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SiDetector {
-    Upstream,
-    Downstream,
+    UpstreamFront,
+    UpstreamBack,
+    DownstreamFront,
+    DownstreamBack,
 }
 
 impl FromStr for SiDetector {
     type Err = SiError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "upstream" {
-            Ok(Self::Upstream)
-        } else if s == "downstream" {
-            Ok(Self::Downstream)
+        if s == "upstream_front" {
+            Ok(Self::UpstreamFront)
+        } else if s == "upstream_back" {
+            Ok(Self::UpstreamBack)
+        } else if s == "downstream_front" {
+            Ok(Self::DownstreamFront)
+        } else if s == "downstream_back" {
+            Ok(Self::DownstreamBack)
         } else {
             Err(SiError::Detector(s.to_string()))
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SiSide {
-    Front,
-    Back,
-}
-
-impl FromStr for SiSide {
-    type Err = SiError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "front" {
-            Ok(Self::Front)
-        } else if s == "back" {
-            Ok(Self::Back)
-        } else {
-            Err(SiError::Side(s.to_string()))
         }
     }
 }
@@ -43,15 +30,13 @@ impl FromStr for SiSide {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct SiliconID {
     pub kind: SiDetector,
-    pub side: SiSide,
     pub channel: usize,
 }
 
 impl SiliconID {
-    pub fn new(kind: &str, side: &str, channel: usize) -> Result<Self, SiError> {
+    pub fn new(kind: &str, channel: usize) -> Result<Self, SiError> {
         Ok(Self {
             kind: SiDetector::from_str(kind)?,
-            side: SiSide::from_str(side)?,
             channel,
         })
     }
