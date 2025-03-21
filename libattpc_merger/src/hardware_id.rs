@@ -1,50 +1,36 @@
-use super::error::SiError;
-use std::str::FromStr;
+use super::error::DetectorError;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SiDetector {
-    UpstreamFront,
-    UpstreamBack,
-    DownstreamFront,
-    DownstreamBack,
-}
-
-impl FromStr for SiDetector {
-    type Err = SiError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s == "upstream_front" {
-            Ok(Self::UpstreamFront)
-        } else if s == "upstream_back" {
-            Ok(Self::UpstreamBack)
-        } else if s == "downstream_front" {
-            Ok(Self::DownstreamFront)
-        } else if s == "downstream_back" {
-            Ok(Self::DownstreamBack)
-        } else {
-            Err(SiError::Detector(s.to_string()))
-        }
-    }
-}
-
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub struct SiliconID {
-    pub kind: SiDetector,
-    pub channel: usize,
-}
-
-impl SiliconID {
-    pub fn new(kind: &str, channel: usize) -> Result<Self, SiError> {
-        Ok(Self {
-            kind: SiDetector::from_str(kind)?,
-            channel,
-        })
-    }
-}
+const PAD_STRING: &str = "pad";
+const SI_UPFRONT_STRING: &str = "si_upstream_front";
+const SI_UPBACK_STRING: &str = "si_upstream_back";
+const SI_DOWNFRONT_STRING: &str = "si_downstream_front";
+const SI_DOWNBACK_STRING: &str = "si_downstream_back";
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Detector {
-    Silicon(SiliconID),
+    SiUpstreamFront(usize),
+    SiUpstreamBack(usize),
+    SiDownstreamFront(usize),
+    SiDownstreamBack(usize),
     Pad(usize),
+}
+
+impl Detector {
+    pub fn from_str_channel(det_str: &str, channel: usize) -> Result<Self, DetectorError> {
+        if det_str == PAD_STRING {
+            Ok(Self::Pad(channel))
+        } else if det_str == SI_UPFRONT_STRING {
+            Ok(Self::SiUpstreamFront(channel))
+        } else if det_str == SI_UPBACK_STRING {
+            Ok(Self::SiUpstreamBack(channel))
+        } else if det_str == SI_DOWNFRONT_STRING {
+            Ok(Self::SiDownstreamFront(channel))
+        } else if det_str == SI_DOWNBACK_STRING {
+            Ok(Self::SiDownstreamBack(channel))
+        } else {
+            Err(DetectorError::InvalidKeyword(det_str.to_string()))
+        }
+    }
 }
 
 // For pad plane

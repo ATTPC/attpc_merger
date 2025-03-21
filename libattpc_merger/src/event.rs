@@ -2,7 +2,7 @@ use fxhash::FxHashMap;
 use ndarray::{s, Array1, Array2};
 
 use crate::constants::SAMPLE_COLUMN_OFFSET;
-use crate::hardware_id::{Detector, SiDetector};
+use crate::hardware_id::Detector;
 
 use super::channel_map::GetChannelMap;
 use super::constants::{COBO_WITH_TIMESTAMP, FPN_CHANNELS, NUMBER_OF_MATRIX_COLUMNS};
@@ -27,10 +27,10 @@ pub struct EventData {
 pub struct Event {
     nframes: i32,
     pad_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
-    upfront_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
-    upback_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
-    downfront_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
-    downback_si_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    si_upfront_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    si_upback_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    si_downfront_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
+    si_downback_traces: FxHashMap<usize, Array1<i16>>, //maps pad id to the trace for that pad
     pub timestamp: u64,
     pub timestampother: u64,
     pub event_id: u32,
@@ -42,10 +42,10 @@ impl Event {
         let mut event = Event {
             nframes: 0,
             pad_traces: FxHashMap::default(),
-            upfront_si_traces: FxHashMap::default(),
-            upback_si_traces: FxHashMap::default(),
-            downfront_si_traces: FxHashMap::default(),
-            downback_si_traces: FxHashMap::default(),
+            si_upfront_traces: FxHashMap::default(),
+            si_upback_traces: FxHashMap::default(),
+            si_downfront_traces: FxHashMap::default(),
+            si_downback_traces: FxHashMap::default(),
             timestamp: 0,
             timestampother: 0,
             event_id: 0,
@@ -62,19 +62,19 @@ impl Event {
         let mut matrices = EventData {
             pad_matrix: Array2::<i16>::zeros([self.pad_traces.len(), NUMBER_OF_MATRIX_COLUMNS]),
             upstream_front_matrix: Array2::<i16>::zeros([
-                self.upfront_si_traces.len(),
+                self.si_upfront_traces.len(),
                 NUMBER_OF_MATRIX_COLUMNS,
             ]),
             upstream_back_matrix: Array2::<i16>::zeros([
-                self.upback_si_traces.len(),
+                self.si_upback_traces.len(),
                 NUMBER_OF_MATRIX_COLUMNS,
             ]),
             downstream_front_matrix: Array2::<i16>::zeros([
-                self.downfront_si_traces.len(),
+                self.si_downfront_traces.len(),
                 NUMBER_OF_MATRIX_COLUMNS,
             ]),
             downstream_back_matrix: Array2::<i16>::zeros([
-                self.downback_si_traces.len(),
+                self.si_downback_traces.len(),
                 NUMBER_OF_MATRIX_COLUMNS,
             ]),
         };
@@ -82,19 +82,19 @@ impl Event {
             let mut trace_slice = matrices.pad_matrix.slice_mut(s![row, ..]);
             trace.move_into(&mut trace_slice);
         }
-        for (row, (_hw_id, trace)) in self.upfront_si_traces.into_iter().enumerate() {
+        for (row, (_hw_id, trace)) in self.si_upfront_traces.into_iter().enumerate() {
             let mut trace_slice = matrices.upstream_front_matrix.slice_mut(s![row, ..]);
             trace.move_into(&mut trace_slice);
         }
-        for (row, (_hw_id, trace)) in self.upback_si_traces.into_iter().enumerate() {
+        for (row, (_hw_id, trace)) in self.si_upback_traces.into_iter().enumerate() {
             let mut trace_slice = matrices.upstream_back_matrix.slice_mut(s![row, ..]);
             trace.assign_to(&mut trace_slice);
         }
-        for (row, (_hw_id, trace)) in self.downfront_si_traces.into_iter().enumerate() {
+        for (row, (_hw_id, trace)) in self.si_downfront_traces.into_iter().enumerate() {
             let mut trace_slice = matrices.downstream_front_matrix.slice_mut(s![row, ..]);
             trace.assign_to(&mut trace_slice);
         }
-        for (row, (_hw_id, trace)) in self.downback_si_traces.into_iter().enumerate() {
+        for (row, (_hw_id, trace)) in self.si_downback_traces.into_iter().enumerate() {
             let mut trace_slice = matrices.downstream_back_matrix.slice_mut(s![row, ..]);
             trace.move_into(&mut trace_slice);
         }
@@ -155,49 +155,30 @@ impl Event {
                 }
             };
 
-            // Put the data in the appropriate trace
-            match &hw_id.detector {
-                Detector::Pad(p) => match self.pad_traces.get_mut(p) {
-                    Some(trace) => {
-                        trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample
-                    }
-                    None => {
-                        let mut trace: Array1<i16> = Array1::<i16>::zeros(NUMBER_OF_MATRIX_COLUMNS);
-                        trace[0] = hw_id.cobo_id as i16;
-                        trace[1] = hw_id.asad_id as i16;
-                        trace[2] = hw_id.aget_id as i16;
-                        trace[3] = hw_id.channel as i16;
-                        trace[5] = *p as i16;
-                        trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample;
-                    }
-                },
-                Detector::Silicon(s) => {
-                    let det_map = match s.kind {
-                        SiDetector::UpstreamFront => &mut self.upfront_si_traces,
-                        SiDetector::UpstreamBack => &mut self.upback_si_traces,
-                        SiDetector::DownstreamBack => &mut self.downback_si_traces,
-                        SiDetector::DownstreamFront => &mut self.downfront_si_traces,
-                    };
+            // Select the appropriate trace map, extract channel
+            let (traces, channel) = match &hw_id.detector {
+                Detector::Pad(p) => (&mut self.pad_traces, p),
+                Detector::SiUpstreamFront(c) => (&mut self.si_upfront_traces, c),
+                Detector::SiUpstreamBack(c) => (&mut self.si_upback_traces, c),
+                Detector::SiDownstreamFront(c) => (&mut self.si_downfront_traces, c),
+                Detector::SiDownstreamBack(c) => (&mut self.si_downback_traces, c),
+            };
 
-                    match det_map.get_mut(&s.channel) {
-                        Some(trace) => {
-                            trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] =
-                                datum.sample
-                        }
-                        None => {
-                            let mut trace: Array1<i16> =
-                                Array1::<i16>::zeros(NUMBER_OF_MATRIX_COLUMNS);
-                            trace[0] = hw_id.cobo_id as i16;
-                            trace[1] = hw_id.asad_id as i16;
-                            trace[2] = hw_id.aget_id as i16;
-                            trace[3] = hw_id.channel as i16;
-                            trace[5] = s.channel as i16;
-                            trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] =
-                                datum.sample;
-                        }
-                    }
+            // Place the data into the right trace
+            match traces.get_mut(channel) {
+                Some(trace) => {
+                    trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample
                 }
-            }
+                None => {
+                    let mut trace: Array1<i16> = Array1::<i16>::zeros(NUMBER_OF_MATRIX_COLUMNS);
+                    trace[0] = hw_id.cobo_id as i16;
+                    trace[1] = hw_id.asad_id as i16;
+                    trace[2] = hw_id.aget_id as i16;
+                    trace[3] = hw_id.channel as i16;
+                    trace[5] = *channel as i16;
+                    trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample;
+                }
+            };
         }
 
         self.nframes += 1;

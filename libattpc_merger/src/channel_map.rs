@@ -17,13 +17,10 @@ use std::path::Path;
 
 use fxhash::FxHashMap;
 
-use crate::hardware_id::{Detector, SiliconID};
-
 use super::error::GetChannelMapError;
-use super::hardware_id::{generate_uuid, HardwareID};
+use crate::hardware_id::{generate_uuid, Detector, HardwareID};
 
-const PAD_ENTRIES_PER_LINE: usize = 5; //Length of line for a pad
-const SI_ENTRIES_PER_LINE: usize = 6; //Length of line for a silicon channel
+const ENTRIES_PER_LINE: usize = 6; //Length of line for a silicon channel
 
 /// Load the default map for windows
 #[cfg(target_family = "windows")]
@@ -63,8 +60,8 @@ impl GetChannelMap {
         let mut ag_id: u8;
         let mut ch_id: u8;
         let mut uuid: u64;
-        let mut hw_id: HardwareID;
-        let mut det_info: Detector;
+        let mut keyword: &str;
+        let mut det_ch: usize;
 
         let mut pm = GetChannelMap::default();
 
@@ -72,7 +69,7 @@ impl GetChannelMap {
         lines.next(); // Skip the header
         for line in lines {
             let entries: Vec<&str> = line.split_terminator(",").collect();
-            if entries.len() < PAD_ENTRIES_PER_LINE {
+            if entries.len() < ENTRIES_PER_LINE {
                 return Err(GetChannelMapError::BadFileFormat);
             }
 
@@ -80,18 +77,20 @@ impl GetChannelMap {
             ad_id = entries[1].parse()?;
             ag_id = entries[2].parse()?;
             ch_id = entries[3].parse()?;
-
-            if entries.len() == PAD_ENTRIES_PER_LINE {
-                det_info = Detector::Pad(entries[4].parse()?);
-            } else if entries.len() == SI_ENTRIES_PER_LINE {
-                det_info = Detector::Silicon(SiliconID::new(entries[4], entries[5].parse()?)?);
-            } else {
-                return Err(GetChannelMapError::BadFileFormat);
-            }
+            keyword = entries[4];
+            det_ch = entries[5].parse()?;
 
             uuid = generate_uuid(&cb_id, &ad_id, &ag_id, &ch_id);
-            hw_id = HardwareID::new(&cb_id, &ad_id, &ag_id, &ch_id, &det_info);
-            pm.map.insert(uuid, hw_id);
+            pm.map.insert(
+                uuid,
+                HardwareID::new(
+                    &cb_id,
+                    &ad_id,
+                    &ag_id,
+                    &ch_id,
+                    &Detector::from_str_channel(keyword, det_ch)?,
+                ),
+            );
         }
 
         Ok(pm)

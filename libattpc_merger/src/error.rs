@@ -280,21 +280,19 @@ impl Display for AsadStackError {
 impl Error for AsadStackError {}
 
 #[derive(Debug)]
-pub enum SiError {
-    Detector(String),
-    Side(String),
+pub enum DetectorError {
+    InvalidKeyword(String),
 }
 
-impl Display for SiError {
+impl Display for DetectorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Detector(s) => write!(f, "Invalid Si detector string {s}"),
-            Self::Side(s) => write!(f, "Invalid Si detector string {s}"),
+            Self::InvalidKeyword(s) => write!(f, "Invalid detector string {s}"),
         }
     }
 }
 
-impl Error for SiError {}
+impl Error for DetectorError {}
 
 /*
    GetChannelMap errors
@@ -304,7 +302,7 @@ impl Error for SiError {}
 pub enum GetChannelMapError {
     IOError(std::io::Error),
     ParsingError(std::num::ParseIntError),
-    SiliconError(SiError),
+    BadDetKeyword(DetectorError),
     BadFileFormat,
 }
 
@@ -320,9 +318,9 @@ impl From<std::num::ParseIntError> for GetChannelMapError {
     }
 }
 
-impl From<SiError> for GetChannelMapError {
-    fn from(value: SiError) -> Self {
-        Self::SiliconError(value)
+impl From<DetectorError> for GetChannelMapError {
+    fn from(value: DetectorError) -> Self {
+        Self::BadDetKeyword(value)
     }
 }
 
@@ -332,55 +330,12 @@ impl Display for GetChannelMapError {
             Self::IOError(e) => write!(f, "GetChannelMap recieved an io error: {}", e),
             Self::ParsingError(e) => write!(f, "GetChannelMap error recieved a parsing error: {}", e),
             Self::BadFileFormat => write!(f, "GetChannelMap found a bad file format while reading the map file! Expected .csv without whitespaces"),
-            Self::SiliconError(e) => write!(f, "GetChannelMap failed trying to parse silicon detector info: {e}")
+            Self::BadDetKeyword(e) => write!(f, "GetChannelMap failed trying to parse silicon detector info: {e}")
         }
     }
 }
 
 impl Error for GetChannelMapError {}
-
-/*
-   GetChannelMap errors
-*/
-
-#[derive(Debug)]
-pub enum SiliconMapError {
-    IOError(std::io::Error),
-    ParsingError(std::num::ParseIntError),
-    BadFileFormat,
-    InvalidDescriptor(SiError),
-}
-
-impl From<std::io::Error> for SiliconMapError {
-    fn from(value: std::io::Error) -> Self {
-        Self::IOError(value)
-    }
-}
-
-impl From<std::num::ParseIntError> for SiliconMapError {
-    fn from(value: std::num::ParseIntError) -> Self {
-        Self::ParsingError(value)
-    }
-}
-
-impl From<SiError> for SiliconMapError {
-    fn from(value: SiError) -> Self {
-        Self::InvalidDescriptor(value)
-    }
-}
-
-impl Display for SiliconMapError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::IOError(e) => write!(f, "SiliconMap recieved an io error: {}", e),
-            Self::ParsingError(e) => write!(f, "SiliconMap error recieved a parsing error: {}", e),
-            Self::BadFileFormat => write!(f, "SiliconMap found a bad file format while reading the map file! Expected .csv without whitespaces"),
-            Self::InvalidDescriptor(e) => write!(f, "SiliconMap failed to parse a detector descriptor: {e}"),
-        }
-    }
-}
-
-impl Error for SiliconMapError {}
 
 /*
    Event errors
