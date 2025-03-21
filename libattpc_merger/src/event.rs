@@ -157,7 +157,7 @@ impl Event {
 
             // Put the data in the appropriate trace
             match &hw_id.detector {
-                Detector::Pad(p) => match self.pad_traces.get_mut(&p) {
+                Detector::Pad(p) => match self.pad_traces.get_mut(p) {
                     Some(trace) => {
                         trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample
                     }
@@ -172,13 +172,12 @@ impl Event {
                     }
                 },
                 Detector::Silicon(s) => {
-                    let det_map: &mut FxHashMap<usize, Array1<i16>>;
-                    match s.kind {
-                        SiDetector::UpstreamFront => det_map = &mut self.upfront_si_traces,
-                        SiDetector::UpstreamBack => det_map = &mut self.upback_si_traces,
-                        SiDetector::DownstreamBack => det_map = &mut self.downback_si_traces,
-                        SiDetector::DownstreamFront => det_map = &mut self.downfront_si_traces,
-                    }
+                    let det_map = match s.kind {
+                        SiDetector::UpstreamFront => &mut self.upfront_si_traces,
+                        SiDetector::UpstreamBack => &mut self.upback_si_traces,
+                        SiDetector::DownstreamBack => &mut self.downback_si_traces,
+                        SiDetector::DownstreamFront => &mut self.downfront_si_traces,
+                    };
 
                     match det_map.get_mut(&s.channel) {
                         Some(trace) => {

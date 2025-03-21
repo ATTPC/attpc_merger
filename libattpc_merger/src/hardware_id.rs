@@ -1,5 +1,4 @@
 use super::error::SiError;
-use std::hash::Hash;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,15 +74,6 @@ impl HardwareID {
             aget_id: *aget_id as usize,
             channel: *channel as usize,
             detector: detector.clone(),
-        }
-    }
-}
-
-impl Hash for HardwareID {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        match &self.detector {
-            Detector::Pad(p) => p.hash(state),
-            Detector::Silicon(s) => s.channel.hash(state),
         }
     }
 }

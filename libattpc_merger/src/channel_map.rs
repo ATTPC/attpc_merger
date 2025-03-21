@@ -22,9 +22,8 @@ use crate::hardware_id::{Detector, SiliconID};
 use super::error::GetChannelMapError;
 use super::hardware_id::{generate_uuid, HardwareID};
 
-const MIN_ENTRIES_PER_LINE: usize = 4; //Min number of elements (cobo, asad, aget, ch)
-const PAD_ENTRIES_PER_LINE: usize = 5; //Number of elements in a single row in the CSV file
-const SI_ENTRIES_PER_LINE: usize = 6; //Number of elements in a single row in the CSV file
+const PAD_ENTRIES_PER_LINE: usize = 5; //Length of line for a pad
+const SI_ENTRIES_PER_LINE: usize = 6; //Length of line for a silicon channel
 
 /// Load the default map for windows
 #[cfg(target_family = "windows")]
