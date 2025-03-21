@@ -20,7 +20,7 @@ fn flush_final_event(
     event_counter: &u64,
 ) -> Result<(), ProcessorError> {
     if let Some(event) = evb.flush_final_event() {
-        writer.write_event(event, event_counter)?;
+        writer.write_get_event(event, event_counter)?;
     } else {
         spdlog::warn!("Last event was not flushed successfully!")
     }
@@ -128,7 +128,7 @@ pub fn process_run(
             }
 
             if let Some(event) = evb.append_frame(frame)? {
-                writer.write_event(event, &event_counter)?;
+                writer.write_get_event(event, &event_counter)?;
                 event_counter += 1;
             } else {
                 continue;

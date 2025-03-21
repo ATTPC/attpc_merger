@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use super::error::HDF5WriterError;
-use super::event::Event;
+use super::event::GetEvent;
 use super::merger::Merger;
 use super::ring_item::{PhysicsItem, RunInfo, ScalersItem};
 
@@ -108,9 +108,9 @@ impl HDFWriter {
     }
 
     /// Write an event, where the event is converted into a data matrix
-    pub fn write_event(
+    pub fn write_get_event(
         &mut self,
-        event: Event,
+        event: GetEvent,
         event_counter: &u64,
     ) -> Result<(), HDF5WriterError> {
         if *event_counter == (START_EVENT_NUMBER as u64) {
