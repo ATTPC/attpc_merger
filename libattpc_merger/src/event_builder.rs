@@ -70,10 +70,7 @@ impl EventBuilder {
     /// Returns None if there were no frames left over.
     pub fn flush_final_event(&mut self) -> Option<GetEvent> {
         if !self.frame_stack.is_empty() {
-            match GetEvent::new(&self.pad_map, &self.frame_stack) {
-                Ok(event) => Some(event),
-                Err(_) => None,
-            }
+            GetEvent::new(&self.pad_map, &self.frame_stack).ok()
         } else {
             None
         }
