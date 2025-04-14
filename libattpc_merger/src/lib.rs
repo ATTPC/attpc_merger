@@ -76,26 +76,26 @@
 //! The following configuration controls are available in the GUI:
 //!
 //! - GRAW Files from Online Source Checkbox: If checked, will try to access GRAW files
-//! from the AT-TPC DAQ itself. Should typically be unchecked. Only for use when running an
-//! experiment.
+//!   from the AT-TPC DAQ itself. Should typically be unchecked. Only for use when running an
+//!   experiment.
 //!   - Experiment: Only available when online checkbox is checked. Name of the experiment, matching the AT-TPC DAQ experiment name.
 //! - GRAW directory: Specifies the full-path to a directory which contains the AT-TPC
-//! GETDAQ .graw structure (i.e. contains subdirectories of the run_# format). If online
-//! is checked, this field is not available.
+//!   GETDAQ .graw structure (i.e. contains subdirectories of the run_# format). If online
+//!   is checked, this field is not available.
 //! - EVT directory: Specifies the full-path to a directory which contains the FRIBDAQ EVT
-//! structure (i.e. contains subdirectories of the run# format)
+//!   structure (i.e. contains subdirectories of the run# format)
 //! - HDF5 directory: Specifies the full-path to a directory to which merged HDF5 (.h5)
-//! files will be written
+//!   files will be written
 //! - Channel map (Optional): Specifies the full path to a CSV file which contains the
-//! mapping information for AT-TPC GET detectors and electronics. If set to default
-//! (clicking the Default button), it will use a channel map that has been bundled with the
-//! code base.
+//!   mapping information for AT-TPC GET detectors and electronics. If set to default
+//!   (clicking the Default button), it will use a channel map that has been bundled with the
+//!   code base.
 //! - First Run Number: The starting run number (inclusive)
 //! - Last Run Number: The ending run number (inclusive)
 //! - Number of Workers: The number of parallel worker threads to divide the runs amongst.
-//! Each worker will get a subset of the run range. If you don't have enough runs to give
-//! all workers something to do, only the threads that would do work are created (i.e.
-//! n_workers = 3, n_runs = 2, only 2 workers are created). Must be at least 1.
+//!   Each worker will get a subset of the run range. If you don't have enough runs to give
+//!   all workers something to do, only the threads that would do work are created (i.e.
+//!   n_workers = 3, n_runs = 2, only 2 workers are created). Must be at least 1.
 //!
 //! Configurations can be saved using File->Save and loaded using File->Open
 //!
