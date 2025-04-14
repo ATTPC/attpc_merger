@@ -251,7 +251,7 @@ impl eframe::App for MergerApp {
                 ui.end_row();
 
                 //Pad map
-                let map_render_text: String = match &self.config.pad_map_path {
+                let map_render_text: String = match &self.config.channel_map_path {
                     Some(p) => p.to_string_lossy().to_string(),
                     None => String::from("Default"),
                 };
@@ -264,11 +264,11 @@ impl eframe::App for MergerApp {
                         .add_filter("CSV file", &["csv", "CSV", "txt"])
                         .pick_file()
                     {
-                        self.config.pad_map_path = Some(path);
+                        self.config.channel_map_path = Some(path);
                     }
                 }
                 if ui.button("Default").clicked() {
-                    self.config.pad_map_path = None
+                    self.config.channel_map_path = None
                 }
                 ui.end_row();
 
