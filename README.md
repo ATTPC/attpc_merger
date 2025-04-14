@@ -55,7 +55,7 @@ The following configuration controls are available in the GUI:
 - GRAW directory: Specifies the full-path to a directory which contains the AT-TPC GETDAQ .graw structure (i.e. contains subdirectories of the run_# format). If online is checked, this field is not available.
 - EVT directory: Specifies the full-path to a directory which contains the FRIBDAQ EVT structure (i.e. contains subdirectories of the run# format)
 - HDF5 directory: Specifies the full-path to a directory to which merged HDF5 (.h5) files will be written
-- Pad map (Optional): Specifies the full path to a CSV file which contains the mapping information for AT-TPC pads and electronics. If set to default (clicking the Default button), it will use a pad map that has been bundled with the code base.
+- Channel map (Optional): Specifies the full path to a CSV file which contains the mapping information for AT-TPC GET detectors and electronics. If set to default (clicking the Default button), it will use a channel map that has been bundled with the code base.
 - First Run Number: The starting run number (inclusive)
 - Last Run Number: The ending run number (inclusive)
 - Number of Workers: The number of parallel worker threads to divide the runs amongst. Each worker will get a subset of the run range. If you don't have enough runs to give all workers something to do, only the threads that would do work are created (i.e. n_workers = 3, n_runs = 2, only 2 workers are created). Must be at least 1.
@@ -68,7 +68,7 @@ A configuration file saved using the UI is compatible with the CLI and vice-vers
 graw_path: None
 evt_path: None
 hdf_path: None
-pad_map_path: null
+channel_map_path: null
 first_run_number: 0
 last_run_number: 0
 online: false
@@ -76,7 +76,26 @@ experiment: ''
 n_threads: 1
 ```
 
-Note that if the `pad_map_path` field is set to `null`, the bundled default map will be used.
+Note that if the `channel_map_path` field is set to `null`, the bundled default map will be used.
+
+### Channel Map Format
+
+The channel map is a CSV file with *no* whitespaces. The columns are as follows:
+
+```csv
+cobo,asad,aget,aget channel,det keyword,det channel
+```
+
+The CoBo, AsAd, AGET, and channel columns denote the GET hardware for that specific channel.
+The `det keyword` and `det channel` columns are a unique keyword and channel eferring 
+to which detector channel the electronics are connected to. Currently supported keywords
+are:
+
+- `pad`
+- `si_upstream_front`
+- `si_upstream_back`
+- `si_downstream_front`
+- `si_downstream_back`
 
 ## Output
 
@@ -88,12 +107,17 @@ The data format used in the HDF5 data is as follows:
 
 ```text
 run_0001.h5
-|---- events - min_event, max_event, min_get_ts, max_get_ts, frib_run, frib_start, frib_stop, frib_time, version
-|    |---- event_#
-|    |    |---- get_traces(dset) - id, timestamp, timestamp_other
-|    |    |---- frib_physics - id, timestamp
-|    |    |    |---- 907(dset)
-|    |    |    |---- 1903(dset)
-|---- scalers - min_event, max_event
-|    |---- event_#(dset) - start_offset, stop_offset, timestamp, incremental
+events - min_event, max_event, min_get_ts, max_get_ts, frib_run, frib_start, frib_stop, frib_time, version
+|---- event_#
+|    |---- get - id, timestamp, timestamp_other
+|    |    |---- pads(dset)
+|    |    |---- si_upstream_front(dset)
+|    |    |---- si_upstream_back(dset)
+|    |    |---- si_downstream_front(dset)
+|    |    |---- si_downstream_back(dset)
+|    |---- frib_physics - id, timestamp
+|    |    |---- 907(dset)
+|    |    |---- 1903(dset)
+scalers - min_event, max_event
+|---- event_#(dset) - start_offset, stop_offset, timestamp, incremental
 ```
