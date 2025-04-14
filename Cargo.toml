@@ -11,7 +11,7 @@ authors = ["Gordon McCann"]
 edition = "2021"
 license = "MIT"
 license-file = "LICENSE.txt"
-version = "0.2.1"
+version = "0.3.0"
 repository = "https://github.com/ATTPC/attpc_merger"
 readme = "README.md"
 
