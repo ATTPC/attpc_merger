@@ -79,6 +79,7 @@
 //! |    |---- event_#(dset) - start_offset, stop_offset, timestamp, incremental
 //! ```
 pub mod asad_stack;
+pub mod channel_map;
 pub mod config;
 pub mod constants;
 pub mod error;
@@ -88,9 +89,9 @@ pub mod evt_file;
 pub mod evt_stack;
 pub mod graw_file;
 pub mod graw_frame;
+pub mod hardware_id;
 pub mod hdf_writer;
 pub mod merger;
-pub mod pad_map;
 pub mod process;
 pub mod ring_item;
 pub mod worker_status;

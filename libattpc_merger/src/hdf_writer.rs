@@ -7,19 +7,24 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use super::error::HDF5WriterError;
-use super::event::Event;
+use super::event::GetEvent;
 use super::merger::Merger;
 use super::ring_item::{PhysicsItem, RunInfo, ScalersItem};
 
 const EVENTS_NAME: &str = "events";
-const GET_TRACES_NAME: &str = "get_traces";
+const GET_NAME: &str = "get";
+const GET_PADS_NAME: &str = "pads";
+const GET_SI_UPFRONT_NAME: &str = "si_upstream_front";
+const GET_SI_UPBACK_NAME: &str = "si_upstream_back";
+const GET_SI_DOWNFRONT_NAME: &str = "si_downstream_front";
+const GET_SI_DOWNBACK_NAME: &str = "si_downstream_back";
 const SCALERS_NAME: &str = "scalers";
 const FRIB_PHYSICS_NAME: &str = "frib_physics";
 
 // All event counters start from 0 by law
 const START_EVENT_NUMBER: u32 = 0;
 /// This is the version of the output format
-const FORMAT_VERSION: &str = "1.0";
+const FORMAT_VERSION: &str = "2.0";
 
 /// A simple struct which wraps around the hdf5-rust library.
 ///
@@ -41,7 +46,12 @@ pub struct HDFWriter {
 // Structure
 // events - min_event, max_event, min_get_ts, max_get_ts, frib_run, frib_start, frib_stop, frib_time, version
 // |---- event_#
-// |    |---- get_traces(dset) - id, timestamp, timestamp_other
+// |    |---- get - id, timestamp, timestamp_other
+// |    |    |---- pads(dset)
+// |    |    |---- si_upstream_front(dset)
+// |    |    |---- si_upstream_back(dset)
+// |    |    |---- si_downstream_front(dset)
+// |    |    |---- si_downstream_back(dset)
 // |    |---- frib_physics - id, timestamp
 // |    |    |---- 907(dset)
 // |    |    |---- 1903(dset)
@@ -98,9 +108,9 @@ impl HDFWriter {
     }
 
     /// Write an event, where the event is converted into a data matrix
-    pub fn write_event(
+    pub fn write_get_event(
         &mut self,
-        event: Event,
+        event: GetEvent,
         event_counter: &u64,
     ) -> Result<(), HDF5WriterError> {
         if *event_counter == (START_EVENT_NUMBER as u64) {
@@ -121,19 +131,37 @@ impl HDFWriter {
             Ok(group) => group,
             Err(_) => self.events_group.create_group(&event_name)?,
         };
-        let traces_dset = event_group
+        let get_group = event_group.create_group(GET_NAME)?;
+        let event_data = event.convert_to_data_matrices();
+        get_group
             .new_dataset_builder()
-            .with_data(&event.convert_to_data_matrix())
-            .create(GET_TRACES_NAME)?;
-        traces_dset
+            .with_data(&event_data.pad_matrix)
+            .create(GET_PADS_NAME)?;
+        get_group
+            .new_dataset_builder()
+            .with_data(&event_data.upstream_front_matrix)
+            .create(GET_SI_UPFRONT_NAME)?;
+        get_group
+            .new_dataset_builder()
+            .with_data(&event_data.upstream_back_matrix)
+            .create(GET_SI_UPBACK_NAME)?;
+        get_group
+            .new_dataset_builder()
+            .with_data(&event_data.downstream_front_matrix)
+            .create(GET_SI_DOWNFRONT_NAME)?;
+        get_group
+            .new_dataset_builder()
+            .with_data(&event_data.downstream_back_matrix)
+            .create(GET_SI_DOWNBACK_NAME)?;
+        get_group
             .new_attr::<u32>()
             .create("id")?
             .write_scalar(&id)?;
-        traces_dset
+        get_group
             .new_attr::<u64>()
             .create("timestamp")?
             .write_scalar(&ts)?;
-        traces_dset
+        get_group
             .new_attr::<u64>()
             .create("timestamp_other")?
             .write_scalar(&tso)?;
