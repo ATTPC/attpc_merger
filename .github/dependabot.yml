@@ -11,3 +11,4 @@ updates:
       interval: "weekly"
     ignore:
       - dependency-name: "hdf5"
+    target-branch: "dev"
