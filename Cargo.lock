@@ -3121,9 +3121,9 @@ dependencies = [
 
 [[package]]
 name = "spdlog-rs"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a640aa7eea1194f522ec6d803c943b6f57816c63b61bb2e9f6688e3a1e11d1c3"
+checksum = "5e7c7550178278306fb1f9d8213882ba460945c18a4fafcbb043d719d73f6d6e"
 dependencies = [
  "arc-swap",
  "atomic",
