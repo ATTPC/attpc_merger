@@ -322,18 +322,66 @@ impl HDFWriter {
             .new_dataset_builder()
             .with_data(&[physics.coinc.coinc])
             .create("977")?;
-        // write SIS3300 data
-        let mut data_matrix =
-            Array2::<u16>::zeros([physics.fadc.samples, physics.fadc.traces.len()]);
-        for i in 0..8 {
-            for j in 0..physics.fadc.samples {
-                data_matrix[[j, i]] = physics.fadc.traces[i][j];
+        // write SIS3300 data if present
+        if physics.fadc1.hasdata == true {
+            let mut data_matrix =
+                Array2::<u16>::zeros([physics.fadc1.samples, physics.fadc1.traces.len()]);
+            for i in 0..8 {
+                for j in 0..physics.fadc1.samples {
+                    data_matrix[[j, i]] = physics.fadc1.traces[i][j];
+                }
             }
+            physics_group
+                .new_dataset_builder()
+                .with_data(&data_matrix)
+                .create("1903")?;
         }
-        physics_group
-            .new_dataset_builder()
-            .with_data(&data_matrix)
-            .create("1903")?;
+        // write SIS3301 data if present
+        if physics.fadc2.hasdata == true {
+            let mut data_matrix =
+                Array2::<u16>::zeros([physics.fadc2.samples, physics.fadc2.traces.len()]);
+            for i in 0..8 {
+                for j in 0..physics.fadc2.samples {
+                    data_matrix[[j, i]] = physics.fadc2.traces[i][j];
+                }
+            }
+            physics_group
+                .new_dataset_builder()
+                .with_data(&data_matrix)
+                .create("1904")?;
+        }
+        // write SIS3301 data if present
+        if physics.fadc3.hasdata == true {
+            let mut data_matrix =
+                Array2::<u16>::zeros([physics.fadc3.samples, physics.fadc3.traces.len()]);
+            for i in 0..8 {
+                for j in 0..physics.fadc3.samples {
+                    data_matrix[[j, i]] = physics.fadc3.traces[i][j];
+                }
+            }
+            physics_group
+                .new_dataset_builder()
+                .with_data(&data_matrix)
+                .create("1905")?;
+        }
+        // write SIS3316 data if present (channel number is encoded as first element)
+        if physics.fadc4.hasdata == true {
+            let mut data_matrix =
+                Array2::<u16>::zeros([physics.fadc4.samples+1, physics.fadc4.channels]);
+            let mut index = 0;
+            for i in 0..16 {
+                if physics.fadc4.valid[i] == true {
+                    for j in 0..physics.fadc4.samples+1 {
+                        data_matrix[[j, index]] = physics.fadc4.traces[i][j];
+                    }
+                    index += 1;
+                }
+            }
+            physics_group
+                .new_dataset_builder()
+                .with_data(&data_matrix)
+                .create("1906")?;
+        }
         Ok(())
     }
 }
