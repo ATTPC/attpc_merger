@@ -10,7 +10,7 @@ pub struct Config {
     pub graw_path: PathBuf,
     pub evt_path: PathBuf,
     pub hdf_path: PathBuf,
-    pub channel_map_path: Option<PathBuf>,
+    pub pad_map_path: Option<PathBuf>,
     pub first_run_number: i32,
     pub last_run_number: i32,
     pub online: bool,
@@ -25,7 +25,7 @@ impl Default for Config {
             graw_path: PathBuf::from("None"),
             evt_path: PathBuf::from("None"),
             hdf_path: PathBuf::from("None"),
-            channel_map_path: None,
+            pad_map_path: None,
             first_run_number: 0,
             last_run_number: 0,
             online: false,
@@ -72,7 +72,7 @@ impl Config {
 
     /// Get the path to the online data, assuming the standard AT-TPC Server configuration
     pub fn get_online_directory(&self, run_number: i32, cobo: &u8) -> Result<PathBuf, ConfigError> {
-        let mut online_dir: PathBuf = PathBuf::new().join(format!("/Volumes/mm{}", cobo));
+        let mut online_dir: PathBuf = PathBuf::new().join(format!("/Network/Servers/mm{}.local/Users/attpc/Data/mm{}", cobo, cobo));
         online_dir = online_dir.join(&self.experiment);
         online_dir = online_dir.join(self.get_run_str(run_number));
         if online_dir.exists() {
