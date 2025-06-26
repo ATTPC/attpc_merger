@@ -199,7 +199,7 @@ impl RunInfo {
     /// Get a formatted string of the EndRunItem
     pub fn print_end(&self) -> String {
         format!(
-            "Run Number: {} Ellapsed Time: {}s",
+            "Run Number: {} Elapsed Time: {}s",
             self.begin.run, self.end.time
         )
     }
@@ -282,7 +282,10 @@ impl CounterItem {
 pub struct PhysicsItem {
     pub event: u32,
     pub timestamp: u32,
-    pub fadc: SIS3300Item,
+    pub fadc1: SIS3300Item,
+    pub fadc2: SIS3300Item,
+    pub fadc3: SIS3300Item,
+    pub fadc4: SIS3316Item,
     pub coinc: V977Item,
 }
 
@@ -295,14 +298,32 @@ impl TryFrom<RingItem> for PhysicsItem {
         info.event = cursor.read_u32::<LittleEndian>()?;
         info.timestamp = cursor.read_u32::<LittleEndian>()?;
         // Parse the stack. Order matters!
-        if cursor.read_u16::<LittleEndian>()? != 0x1903 {
-            return Err(EvtItemError::StackOrderError);
+        // DB 2025-06-05 modified to loop on tags for more flexibility
+        loop {
+            let tag = cursor.read_u16::<LittleEndian>()?;
+            if tag == 0x1903 {
+                info.fadc1.extract_data(&mut cursor)?;
+            } else if tag == 0x1904 {
+                info.fadc2.extract_data(&mut cursor)?;
+            } else if tag == 0x1905 {
+                info.fadc3.extract_data(&mut cursor)?;
+            } else if tag == 0x1906 {
+                info.fadc4.extract_data(&mut cursor)?;
+            } else if tag == 0x977 {
+                info.coinc.extract_data(&mut cursor)?;
+            } else { // If unknown tag, assume end of data
+                cursor.set_position(cursor.position()-2);
+                break;
+            }
         }
-        info.fadc.extract_data(&mut cursor)?;
-        if cursor.read_u16::<LittleEndian>()? != 0x977 {
-            return Err(EvtItemError::StackOrderError);
-        }
-        info.coinc.extract_data(&mut cursor)?;
+        // if cursor.read_u16::<LittleEndian>()? != 0x1903 {
+        //     return Err(EvtItemError::StackOrderError);
+        // }
+        // info.fadc.extract_data(&mut cursor)?;
+        // if cursor.read_u16::<LittleEndian>()? != 0x977 {
+        //     return Err(EvtItemError::StackOrderError);
+        // }
+        // info.coinc.extract_data(&mut cursor)?;
 
         Ok(info)
     }
@@ -319,18 +340,22 @@ impl PhysicsItem {
         PhysicsItem {
             event: 0,
             timestamp: 0,
-            fadc: SIS3300Item::new(),
+            fadc1: SIS3300Item::new(),
+            fadc2: SIS3300Item::new(),
+            fadc3: SIS3300Item::new(),
+            fadc4: SIS3316Item::new(),
             coinc: V977Item::new(),
         }
     }
 }
 
-/// Item from Struck module SIS3300: 8 channel flash ADC (12 bits)
+/// Item from Struck modules SIS3300 & SIS3301: 8 channel flash ADC (12 & 14 bits)
 #[derive(Debug, Clone)]
 pub struct SIS3300Item {
     pub traces: Vec<Vec<u16>>,
     pub samples: usize,
     pub channels: usize,
+    pub hasdata: bool,
 }
 
 impl Default for SIS3300Item {
@@ -345,6 +370,7 @@ impl SIS3300Item {
             traces: vec![vec![]; 8],
             samples: 0,
             channels: 0,
+            hasdata: false,
         }
     }
 
@@ -374,7 +400,7 @@ impl SIS3300Item {
             self.channels += 2; // channels are read in pairs
             header = cursor.read_u16::<LittleEndian>()?;
             if header != 0xfadc {
-                spdlog::error!("Invalid SIS3300 header: {:#x}!", header);
+                spdlog::error!("Invalid SIS3300/1 header: {:#x}!", header);
                 break;
             }
             group_trigger = cursor.read_u32::<LittleEndian>()?;
@@ -414,6 +440,7 @@ impl SIS3300Item {
                 spdlog::error!("Invalid SIS3300 trailer: {:#x}!", trailer);
                 break;
             }
+            self.hasdata = true;
         }
 
         Ok(())
@@ -436,6 +463,70 @@ impl V977Item {
     /// Nothing too fancy. Read a single u16 from the PhysicsItem buffer
     pub fn extract_data(&mut self, cursor: &mut Cursor<Vec<u8>>) -> Result<(), EvtItemError> {
         self.coinc = cursor.read_u16::<LittleEndian>()?;
+        Ok(())
+    }
+}
+
+/// Item from Struck modules SIS3316: 16 channel flash ADC (14 bits)
+#[derive(Debug, Clone)]
+pub struct SIS3316Item {
+    pub traces: Vec<Vec<u16>>,
+    pub samples: usize,
+    pub channels: usize,
+    pub valid: Vec<bool>,
+    pub hasdata: bool,
+}
+
+impl Default for SIS3316Item {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SIS3316Item {
+    pub fn new() -> SIS3316Item {
+        SIS3316Item {
+            traces: vec![vec![]; 16],
+            samples: 0,
+            channels: 0,
+            valid: vec![false; 16],
+            hasdata: false,
+        }
+    }
+
+    /// Extract the relevant data from the PhysicsItem buffer.
+    pub fn extract_data(
+        &mut self,
+        cursor: &mut std::io::Cursor<Vec<u8>>,
+    ) -> Result<(), EvtItemError> {
+        let mut channel = ((cursor.read_u16::<LittleEndian>()?)>>4 & 0xf) as usize;
+        let mut _stamp1 = cursor.read_u32::<LittleEndian>()?;
+        let mut _stamp2 = cursor.read_u16::<LittleEndian>()?;
+        self.samples = (cursor.read_u16::<LittleEndian>()? * 2) as usize;
+        let mut _status = cursor.read_u16::<LittleEndian>()?;
+        let mut next: u16;
+
+        loop {
+            self.valid[channel] = true;
+            self.channels += 1;
+            self.traces[channel] = vec![0; self.samples+1];
+            self.traces[channel][0] = channel as u16; // Encode channel number as first datum
+            for i in 0..self.samples {
+                self.traces[channel][i+1] = cursor.read_u16::<LittleEndian>()?;
+            }
+            next = cursor.read_u16::<LittleEndian>()?;
+            cursor.set_position(cursor.position()-2);
+            if next == 0xffff {
+                break;
+            }
+            channel = ((cursor.read_u16::<LittleEndian>()?)>>4 & 0xf) as usize;
+            _stamp1 = cursor.read_u32::<LittleEndian>()?;
+            _stamp2 = cursor.read_u16::<LittleEndian>()?;
+            self.samples = (cursor.read_u16::<LittleEndian>()? * 2) as usize;
+            _status = cursor.read_u16::<LittleEndian>()?;
+        }
+        self.hasdata = true;
+
         Ok(())
     }
 }
