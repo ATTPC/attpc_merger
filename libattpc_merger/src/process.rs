@@ -81,7 +81,6 @@ pub fn process_run(
     let pad_map = GetChannelMap::new(config.channel_map_path.as_deref())?;
 
     //Initialize the merger, event builder, and hdf writer
-    
     let mut merger = Merger::new(config, run_number)?;
     spdlog::info!(
         "Total run size: {}",

@@ -367,11 +367,11 @@ impl HDFWriter {
         // write SIS3316 data if present (channel number is encoded as first element)
         if physics.fadc4.hasdata == true {
             let mut data_matrix =
-                Array2::<u16>::zeros([physics.fadc4.samples+1, physics.fadc4.channels]);
+                Array2::<u16>::zeros([physics.fadc4.samples + 1, physics.fadc4.channels]);
             let mut index = 0;
             for i in 0..16 {
                 if physics.fadc4.valid[i] == true {
-                    for j in 0..physics.fadc4.samples+1 {
+                    for j in 0..physics.fadc4.samples + 1 {
                         data_matrix[[j, index]] = physics.fadc4.traces[i][j];
                     }
                     index += 1;
