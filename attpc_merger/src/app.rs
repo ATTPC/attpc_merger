@@ -255,7 +255,7 @@ impl eframe::App for MergerApp {
                     Some(p) => p.to_string_lossy().to_string(),
                     None => String::from("Default"),
                 };
-                ui.label(format!("Pad map: {}", map_render_text));
+                ui.label(format!("Pad map: {map_render_text}"));
                 if ui.button("Open...").clicked() {
                     if let Some(path) = FileDialog::new()
                         .set_directory(
