@@ -177,6 +177,7 @@ impl GetEvent {
                     trace[3] = hw_id.channel as i16;
                     trace[5] = *channel as i16;
                     trace[datum.time_bucket_id as usize + SAMPLE_COLUMN_OFFSET] = datum.sample;
+                    traces.insert(*channel, trace);
                 }
             };
         }

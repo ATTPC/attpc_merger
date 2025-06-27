@@ -311,8 +311,9 @@ impl TryFrom<RingItem> for PhysicsItem {
                 info.fadc4.extract_data(&mut cursor)?;
             } else if tag == 0x977 {
                 info.coinc.extract_data(&mut cursor)?;
-            } else { // If unknown tag, assume end of data
-                cursor.set_position(cursor.position()-2);
+            } else {
+                // If unknown tag, assume end of data
+                cursor.set_position(cursor.position() - 2);
                 break;
             }
         }
@@ -499,7 +500,7 @@ impl SIS3316Item {
         &mut self,
         cursor: &mut std::io::Cursor<Vec<u8>>,
     ) -> Result<(), EvtItemError> {
-        let mut channel = ((cursor.read_u16::<LittleEndian>()?)>>4 & 0xf) as usize;
+        let mut channel = ((cursor.read_u16::<LittleEndian>()?) >> 4 & 0xf) as usize;
         let mut _stamp1 = cursor.read_u32::<LittleEndian>()?;
         let mut _stamp2 = cursor.read_u16::<LittleEndian>()?;
         self.samples = (cursor.read_u16::<LittleEndian>()? * 2) as usize;
@@ -509,17 +510,17 @@ impl SIS3316Item {
         loop {
             self.valid[channel] = true;
             self.channels += 1;
-            self.traces[channel] = vec![0; self.samples+1];
+            self.traces[channel] = vec![0; self.samples + 1];
             self.traces[channel][0] = channel as u16; // Encode channel number as first datum
             for i in 0..self.samples {
-                self.traces[channel][i+1] = cursor.read_u16::<LittleEndian>()?;
+                self.traces[channel][i + 1] = cursor.read_u16::<LittleEndian>()?;
             }
             next = cursor.read_u16::<LittleEndian>()?;
-            cursor.set_position(cursor.position()-2);
+            cursor.set_position(cursor.position() - 2);
             if next == 0xffff {
                 break;
             }
-            channel = ((cursor.read_u16::<LittleEndian>()?)>>4 & 0xf) as usize;
+            channel = ((cursor.read_u16::<LittleEndian>()?) >> 4 & 0xf) as usize;
             _stamp1 = cursor.read_u32::<LittleEndian>()?;
             _stamp2 = cursor.read_u16::<LittleEndian>()?;
             self.samples = (cursor.read_u16::<LittleEndian>()? * 2) as usize;
