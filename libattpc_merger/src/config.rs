@@ -62,7 +62,7 @@ impl Config {
     /// Get the Path to a run file
     pub fn get_run_directory(&self, run_number: i32, cobo: &u8) -> Result<PathBuf, ConfigError> {
         let mut run_dir: PathBuf = self.graw_path.join(self.get_run_str(run_number));
-        run_dir = run_dir.join(format!("mm{}", cobo));
+        run_dir = run_dir.join(format!("mm{cobo}"));
         if run_dir.exists() {
             Ok(run_dir)
         } else {
@@ -73,8 +73,7 @@ impl Config {
     /// Get the path to the online data, assuming the standard AT-TPC Server configuration
     pub fn get_online_directory(&self, run_number: i32, cobo: &u8) -> Result<PathBuf, ConfigError> {
         let mut online_dir: PathBuf = PathBuf::new().join(format!(
-            "/Network/Servers/mm{}.local/Users/attpc/Data/mm{}",
-            cobo, cobo
+            "/Network/Servers/mm{cobo}.local/Users/attpc/Data/mm{cobo}"
         ));
         online_dir = online_dir.join(&self.experiment);
         online_dir = online_dir.join(self.get_run_str(run_number));
@@ -87,7 +86,7 @@ impl Config {
 
     /// Get the path to the FRIBDAQ directory, assuming the standard AT-TPC configuration
     pub fn get_evt_directory(&self, run_number: i32) -> Result<PathBuf, ConfigError> {
-        let run_dir: PathBuf = self.evt_path.join(format!("run{}", run_number));
+        let run_dir: PathBuf = self.evt_path.join(format!("run{run_number}"));
         if run_dir.exists() {
             Ok(run_dir)
         } else {
@@ -109,7 +108,7 @@ impl Config {
 
     /// Construct the run string using the AT-TPC DAQ format
     fn get_run_str(&self, run_number: i32) -> String {
-        format!("run_{:0>4}", run_number)
+        format!("run_{run_number:0>4}")
     }
 
     pub fn is_n_threads_valid(&self) -> bool {

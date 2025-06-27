@@ -125,7 +125,7 @@ impl HDFWriter {
         let id = event.event_id;
         let ts = event.timestamp;
         let tso = event.timestampother;
-        let event_name = format!("event_{}", event_counter);
+        let event_name = format!("event_{event_counter}");
 
         let event_group = match self.events_group.group(&event_name) {
             Ok(group) => group,
@@ -271,7 +271,7 @@ impl HDFWriter {
             .scalers_group
             .new_dataset_builder()
             .with_data(&scalers.data)
-            .create(format!("event_{}", counter).as_str())?;
+            .create(format!("event_{counter}").as_str())?;
 
         scaler_dset
             .new_attr::<u32>()
@@ -303,7 +303,7 @@ impl HDFWriter {
             self.last_frib_event = *event_counter;
         }
 
-        let event_name = format!("event_{}", event_counter);
+        let event_name = format!("event_{event_counter}");
         let event_group = match self.events_group.group(&event_name) {
             Ok(group) => group,
             Err(_) => self.events_group.create_group(&event_name)?,
@@ -323,7 +323,7 @@ impl HDFWriter {
             .with_data(&[physics.coinc.coinc])
             .create("977")?;
         // write SIS3300 data if present
-        if physics.fadc1.hasdata == true {
+        if physics.fadc1.hasdata {
             let mut data_matrix =
                 Array2::<u16>::zeros([physics.fadc1.samples, physics.fadc1.traces.len()]);
             for i in 0..8 {
@@ -337,7 +337,7 @@ impl HDFWriter {
                 .create("1903")?;
         }
         // write SIS3301 data if present
-        if physics.fadc2.hasdata == true {
+        if physics.fadc2.hasdata {
             let mut data_matrix =
                 Array2::<u16>::zeros([physics.fadc2.samples, physics.fadc2.traces.len()]);
             for i in 0..8 {
@@ -351,7 +351,7 @@ impl HDFWriter {
                 .create("1904")?;
         }
         // write SIS3301 data if present
-        if physics.fadc3.hasdata == true {
+        if physics.fadc3.hasdata {
             let mut data_matrix =
                 Array2::<u16>::zeros([physics.fadc3.samples, physics.fadc3.traces.len()]);
             for i in 0..8 {
@@ -365,12 +365,12 @@ impl HDFWriter {
                 .create("1905")?;
         }
         // write SIS3316 data if present (channel number is encoded as first element)
-        if physics.fadc4.hasdata == true {
+        if physics.fadc4.hasdata {
             let mut data_matrix =
                 Array2::<u16>::zeros([physics.fadc4.samples + 1, physics.fadc4.channels]);
             let mut index = 0;
             for i in 0..16 {
-                if physics.fadc4.valid[i] == true {
+                if physics.fadc4.valid[i] {
                     for j in 0..physics.fadc4.samples + 1 {
                         data_matrix[[j, index]] = physics.fadc4.traces[i][j];
                     }
