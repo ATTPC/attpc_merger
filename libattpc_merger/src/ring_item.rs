@@ -300,7 +300,10 @@ impl TryFrom<RingItem> for PhysicsItem {
         // Parse the stack. Order matters!
         // DB 2025-06-05 modified to loop on tags for more flexibility
         loop {
-            let tag = cursor.read_u16::<LittleEndian>()?;
+            let tag = match cursor.read_u16::<LittleEndian>() {
+                Ok(tag) => tag,
+                Err(_e) => break,
+            };
             if tag == 0x1903 {
                 info.fadc1.extract_data(&mut cursor)?;
             } else if tag == 0x1904 {
@@ -312,7 +315,7 @@ impl TryFrom<RingItem> for PhysicsItem {
             } else if tag == 0x977 {
                 info.coinc.extract_data(&mut cursor)?;
             } else {
-                // If unknown tag, assume end of data
+                // If unknown tag, bail out
                 cursor.set_position(cursor.position() - 2);
                 break;
             }
@@ -394,8 +397,13 @@ impl SIS3300Item {
 
         //The module has four groups of channels
         for group in 0..4 {
-            if group_enable_flags & (1 << group) == 0 {
-                // skip if group is not enabled
+            if group_enable_flags & (1 >> group) == 0 {
+                // skip if group is not enabled and fill array with zeros
+                self.channels += 2;
+                if self.samples > 0 {
+                    self.traces[group * 2] = vec![0; self.samples];
+                    self.traces[group * 2 + 1] = vec![0; self.samples];
+                }
                 continue;
             }
             self.channels += 2; // channels are read in pairs
