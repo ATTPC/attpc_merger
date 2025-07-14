@@ -13,4 +13,4 @@ eframe = "0.31.1"
 spdlog-rs.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
-rfd = "0.15.3"
+rfd = "0.15.4"
