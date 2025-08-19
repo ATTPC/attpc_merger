@@ -19,4 +19,4 @@ ndarray.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
 time.workspace = true
-thiserror = "2.0.12"
+thiserror = "2.0.15"
