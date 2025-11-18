@@ -382,6 +382,7 @@ impl HDFWriter {
                 .with_data(&data_matrix)
                 .create("1906")?;
         }
+
         Ok(())
     }
 }

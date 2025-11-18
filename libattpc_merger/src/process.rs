@@ -58,6 +58,7 @@ fn process_evt_data(evt_path: PathBuf, writer: &mut HDFWriter) -> Result<(), Pro
             RingType::Physics => {
                 // Physics data
                 ring.remove_boundaries(); // physics event often cross VMUSB buffer boundary
+                //println!("fadc2 has {} samples", sam2);
                 writer.write_frib_physics(PhysicsItem::try_from(ring)?, &event_counter)?;
                 event_counter += 1;
             }

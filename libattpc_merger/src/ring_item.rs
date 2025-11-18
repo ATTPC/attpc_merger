@@ -1,6 +1,6 @@
 use super::error::EvtItemError;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Cursor, Read};
+use std::{fmt::UpperHex, io::{Cursor, Read}};
 
 //These are the literal values for the different ring item type fields
 const BEGIN_RUN_VAL: u8 = 1;
@@ -304,6 +304,8 @@ impl TryFrom<RingItem> for PhysicsItem {
                 Ok(tag) => tag,
                 Err(_e) => break,
             };
+            // println!("Tag found: {:X}", tag);
+            
             if tag == 0x1903 {
                 info.fadc1.extract_data(&mut cursor)?;
             } else if tag == 0x1904 {
@@ -314,8 +316,13 @@ impl TryFrom<RingItem> for PhysicsItem {
                 info.fadc4.extract_data(&mut cursor)?;
             } else if tag == 0x977 {
                 info.coinc.extract_data(&mut cursor)?;
-            } else {
+            } else if tag == 0xFFFF {
+                cursor.set_position(cursor.position() - 2);
+                break;
+            }
+            else {
                 // If unknown tag, bail out
+                println!("No match found for tag: {:X}", tag);
                 cursor.set_position(cursor.position() - 2);
                 break;
             }
@@ -397,15 +404,15 @@ impl SIS3300Item {
 
         //The module has four groups of channels
         for group in 0..4 {
-            if group_enable_flags & (1 >> group) == 0 {
-                // skip if group is not enabled and fill array with zeros
-                self.channels += 2;
-                if self.samples > 0 {
-                    self.traces[group * 2] = vec![0; self.samples];
-                    self.traces[group * 2 + 1] = vec![0; self.samples];
-                }
-                continue;
-            }
+            // if group_enable_flags & (1 >> group) == 0 {
+            //     // skip if group is not enabled and fill array with zeros
+            //     self.channels += 2;
+            //     if self.samples > 0 {
+            //         self.traces[group * 2] = vec![0; self.samples];
+            //         self.traces[group * 2 + 1] = vec![0; self.samples];
+            //     }
+            //     continue;
+            // }
             self.channels += 2; // channels are read in pairs
             header = cursor.read_u16::<LittleEndian>()?;
             if header != 0xfadc {

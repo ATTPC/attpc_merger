@@ -86,7 +86,8 @@ impl Config {
 
     /// Get the path to the FRIBDAQ directory, assuming the standard AT-TPC configuration
     pub fn get_evt_directory(&self, run_number: i32) -> Result<PathBuf, ConfigError> {
-        let run_dir: PathBuf = self.evt_path.join(format!("run{run_number}"));
+//        let run_dir: PathBuf = self.evt_path.join(format!("run{run_number}"));
+        let run_dir: PathBuf = self.evt_path.join("");
         if run_dir.exists() {
             Ok(run_dir)
         } else {
