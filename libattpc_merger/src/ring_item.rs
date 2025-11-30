@@ -1,6 +1,6 @@
 use super::error::EvtItemError;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::{fmt::UpperHex, io::{Cursor, Read}};
+use std::io::{Cursor, Read};
 
 //These are the literal values for the different ring item type fields
 const BEGIN_RUN_VAL: u8 = 1;
@@ -317,7 +317,6 @@ impl TryFrom<RingItem> for PhysicsItem {
             } else if tag == 0x977 {
                 info.coinc.extract_data(&mut cursor)?;
             } else if tag == 0xFFFF {
-                cursor.set_position(cursor.position() - 2);
                 break;
             }
             else {
@@ -393,7 +392,7 @@ impl SIS3300Item {
         &mut self,
         cursor: &mut std::io::Cursor<Vec<u8>>,
     ) -> Result<(), EvtItemError> {
-        let group_enable_flags = cursor.read_u16::<LittleEndian>()?;
+        let _group_enable_flags = cursor.read_u16::<LittleEndian>()?;
         let _daq_register = cursor.read_u32::<LittleEndian>()?; //Never used, but must be read
 
         //Important buffer elements

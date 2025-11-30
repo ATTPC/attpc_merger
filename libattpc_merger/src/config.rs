@@ -72,13 +72,9 @@ impl Config {
 
     /// Get the path to the online data, assuming the standard AT-TPC Server configuration
     pub fn get_online_directory(&self, run_number: i32, cobo: &u8) -> Result<PathBuf, ConfigError> {
-<<<<<<< Updated upstream
         let mut online_dir: PathBuf = PathBuf::new().join(format!(
             "/Network/Servers/mm{cobo}.local/Users/attpc/Data/mm{cobo}"
         ));
-=======
-        let mut online_dir: PathBuf = PathBuf::new().join(format!("/Network/Servers/mm{}.local/Users/attpc/Data/mm{}", cobo, cobo));
->>>>>>> Stashed changes
         online_dir = online_dir.join(&self.experiment);
         online_dir = online_dir.join(self.get_run_str(run_number));
         if online_dir.exists() {
@@ -90,8 +86,8 @@ impl Config {
 
     /// Get the path to the FRIBDAQ directory, assuming the standard AT-TPC configuration
     pub fn get_evt_directory(&self, run_number: i32) -> Result<PathBuf, ConfigError> {
-//        let run_dir: PathBuf = self.evt_path.join(format!("run{run_number}"));
-        let run_dir: PathBuf = self.evt_path.join("");
+        let run_dir: PathBuf = self.evt_path.join(format!("run{run_number}"));
+//        let run_dir: PathBuf = self.evt_path.clone();
         if run_dir.exists() {
             Ok(run_dir)
         } else {
