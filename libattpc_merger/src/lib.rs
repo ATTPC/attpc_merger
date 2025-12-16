@@ -182,4 +182,6 @@ pub mod hdf_writer;
 pub mod merger;
 pub mod process;
 pub mod ring_item;
+pub mod frib_builder;
+pub mod file_copier;
 pub mod worker_status;

@@ -8,12 +8,14 @@ use super::error::ConfigError;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub graw_path: PathBuf,
-    pub evt_path: PathBuf,
+    pub evt_path: Option<PathBuf>,
     pub hdf_path: PathBuf,
+    pub copy_path: Option<PathBuf>,
     pub channel_map_path: Option<PathBuf>,
     pub first_run_number: i32,
     pub last_run_number: i32,
     pub online: bool,
+    pub delete_copied: bool,
     pub experiment: String,
     pub n_threads: i32,
 }
@@ -23,12 +25,14 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             graw_path: PathBuf::from("None"),
-            evt_path: PathBuf::from("None"),
+            evt_path: None,
             hdf_path: PathBuf::from("None"),
+            copy_path: None,
             channel_map_path: None,
             first_run_number: 0,
             last_run_number: 0,
             online: false,
+            delete_copied: true,
             experiment: String::from(""),
             n_threads: 1,
         }
@@ -85,11 +89,13 @@ impl Config {
     }
 
     /// Get the path to the FRIBDAQ directory, assuming the standard AT-TPC configuration
-    pub fn get_evt_directory(&self, run_number: i32) -> Result<PathBuf, ConfigError> {
-        let run_dir: PathBuf = self.evt_path.join(format!("run{run_number}"));
-//        let run_dir: PathBuf = self.evt_path.clone();
+    pub fn get_evt_directory(&self, run_number: i32) -> Result<Option<PathBuf>, ConfigError> {
+        if self.evt_path.is_none() {
+            return Ok(None);
+        }
+        let run_dir: PathBuf = self.evt_path.as_ref().unwrap().join(format!("run{run_number}"));
         if run_dir.exists() {
-            Ok(run_dir)
+            Ok(Some(run_dir))
         } else {
             Err(ConfigError::BadFilePath(run_dir))
         }
@@ -107,6 +113,15 @@ impl Config {
         }
     }
 
+    /// Get the path to the copy directory, if it exists
+    pub fn get_copy_directory(&self, run_number: i32) -> Result<Option<PathBuf>, ConfigError> {
+        if self.copy_path.is_none() {
+            return Ok(None);
+        }
+        let run_dir: PathBuf = self.copy_path.as_ref().unwrap().join(format!("run{run_number}"));
+        Ok(Some(run_dir))
+    }
+
     /// Construct the run string using the AT-TPC DAQ format
     fn get_run_str(&self, run_number: i32) -> String {
         format!("run_{run_number:0>4}")
@@ -114,5 +129,13 @@ impl Config {
 
     pub fn is_n_threads_valid(&self) -> bool {
         self.n_threads >= 1
+    }
+
+    pub fn need_copy_files(&self) -> bool {
+        self.copy_path.is_some()
+    }
+
+    pub fn delete_copied_files(&self) -> bool {
+        self.need_copy_files() &&  self.delete_copied
     }
 }

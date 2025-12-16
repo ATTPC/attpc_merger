@@ -30,10 +30,16 @@ impl Merger {
         //For every asad in every cobo, attempt to make a stack
         let mut graw_dir: PathBuf;
         for cobo in 0..NUMBER_OF_COBOS {
-            if config.online {
-                graw_dir = config.get_online_directory(run_number, &cobo)?;
+            if config.need_copy_files() {
+                graw_dir = config.get_copy_directory(run_number)?.unwrap()
+                    .join("graw")
+                    .join(format!("mm{cobo}"));
             } else {
-                graw_dir = config.get_run_directory(run_number, &cobo)?;
+                if config.online {
+                    graw_dir = config.get_online_directory(run_number, &cobo)?;
+                } else {
+                    graw_dir = config.get_run_directory(run_number, &cobo)?;
+                }
             }
             for asad in 0..NUMBER_OF_ASADS {
                 match AsadStack::new(&graw_dir, cobo as i32, asad as i32) {

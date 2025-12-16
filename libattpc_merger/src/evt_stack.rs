@@ -12,9 +12,9 @@ use std::path::{Path, PathBuf};
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct EvtStack {
-    file_stack: VecDeque<PathBuf>,
+    pub file_stack: VecDeque<PathBuf>,
     active_file: EvtFile,
-    total_stack_size_bytes: u64,
+    pub total_stack_size_bytes: u64,
     is_ended: bool,
     parent_path: PathBuf,
 }
