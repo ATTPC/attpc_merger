@@ -184,40 +184,37 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_secs(1));
         match rx.try_recv() {
             Ok(status) => {
-                if status.progress == 0.0 {
-                    let bar = &progress_bars[status.worker_id];
-                    let filled_color = match status.color {
-                        BarColor::CYAN => "cyan",
-                        BarColor::MAGENTA => "magenta",
-                        BarColor::RED => "red",
-                        BarColor::GREEN => "green",
-                    };
-                    let blank_color = match status.color {
-                        BarColor::CYAN => "green",
-                        BarColor::MAGENTA => "cyan",
-                        BarColor::RED => "magenta",
-                        BarColor::GREEN => "blue",
-                    };
-                    let template_str = format!(
-                        "{{msg}} - {{ellapsed_precise}}, {{bar:40.{}/{}}} {{percent}}%",
-                        filled_color,
-                        blank_color,
-                    );
-                    let message = match status.color {
-                        BarColor::CYAN => "Merging",
-                        BarColor::MAGENTA => "",
-                        BarColor::RED => "",
-                        BarColor::GREEN => "Copying",
-                    };
-                    bar.set_style(ProgressStyle::with_template(template_str.as_str()).unwrap());
-                    bar.set_message(format!(
-                        "Worker {}: {} run {}",
-                        status.worker_id,
-                        message,
-                        status.run_number,
-                    ));
-                }
+                let filled_color = match status.color {
+                    BarColor::CYAN => "cyan",
+                    BarColor::MAGENTA => "magenta",
+                    BarColor::RED => "red",
+                    BarColor::GREEN => "green",
+                };
+                let blank_color = match status.color {
+                    BarColor::CYAN => "green",
+                    BarColor::MAGENTA => "cyan",
+                    BarColor::RED => "magenta",
+                    BarColor::GREEN => "blue",
+                };
+                let template_str = format!(
+                    "{{msg}} - {{ellapsed_precise}}, {{bar:40.{}/{}}} {{percent}}%",
+                    filled_color,
+                    blank_color,
+                );
+                let message = match status.color {
+                    BarColor::CYAN => "Merging",
+                    BarColor::MAGENTA => "",
+                    BarColor::RED => "",
+                    BarColor::GREEN => "Copying",
+                };
                 let bar = &progress_bars[status.worker_id];
+                bar.set_style(ProgressStyle::with_template(template_str.as_str()).unwrap());
+                bar.set_message(format!(
+                    "Worker {}: {} run {}",
+                    status.worker_id,
+                    message,
+                    status.run_number,
+                ));
                 bar.set_position((status.progress * 100.0) as u64);
             }
             Err(mpsc::TryRecvError::Empty) => continue,
