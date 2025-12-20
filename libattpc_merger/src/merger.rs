@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::constants::{NUMBER_OF_ASADS, NUMBER_OF_COBOS};
+use super::constants::{NUMBER_OF_ASADS, NUMBER_OF_COBOS, COBO_OF_SILICON};
 use super::error::AsadStackError;
 
 use super::asad_stack::AsadStack;
@@ -30,6 +30,12 @@ impl Merger {
         //For every asad in every cobo, attempt to make a stack
         let mut graw_dir: PathBuf;
         for cobo in 0..NUMBER_OF_COBOS {
+            if !config.merge_atttpc && cobo < COBO_OF_SILICON {
+                continue;
+            }
+            if !config.merge_silicon && cobo >= COBO_OF_SILICON {
+                continue;
+            }
             if config.need_copy_files() {
                 graw_dir = config.get_copy_directory(run_number)?.unwrap()
                     .join("graw")

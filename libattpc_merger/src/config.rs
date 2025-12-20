@@ -8,15 +8,17 @@ use super::error::ConfigError;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub graw_path: PathBuf,
+    pub online: bool,
+    pub experiment: String,
+    pub merge_atttpc: bool,
+    pub merge_silicon: bool,
     pub evt_path: Option<PathBuf>,
     pub hdf_path: PathBuf,
     pub copy_path: Option<PathBuf>,
+    pub delete_copied: bool,
     pub channel_map_path: Option<PathBuf>,
     pub first_run_number: i32,
     pub last_run_number: i32,
-    pub online: bool,
-    pub delete_copied: bool,
-    pub experiment: String,
     pub n_threads: i32,
 }
 
@@ -25,15 +27,17 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             graw_path: PathBuf::from("None"),
+            online: false,
+            experiment: String::from(""),
+            merge_atttpc: true,
+            merge_silicon: true,
             evt_path: None,
             hdf_path: PathBuf::from("None"),
             copy_path: None,
+            delete_copied: true,
             channel_map_path: None,
             first_run_number: 0,
             last_run_number: 0,
-            online: false,
-            delete_copied: true,
-            experiment: String::from(""),
             n_threads: 1,
         }
     }

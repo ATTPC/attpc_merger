@@ -225,6 +225,9 @@ impl eframe::App for MergerApp {
                     }
                     ui.end_row();
                 }
+                ui.checkbox(&mut self.config.merge_atttpc, "Merge AT-TPC data");
+                ui.checkbox(&mut self.config.merge_silicon, "Merge Silicon data");
+                ui.end_row();
 
                 //EVT directory
                 ui.label(format!(
