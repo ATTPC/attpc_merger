@@ -113,7 +113,7 @@ pub fn process_run(
             }
             spdlog::info!(
                 "Copied {} in {}",
-                src.file_name().unwrap().display(),
+                src.file_name().unwrap().to_string_lossy(),
                 human_bytes::human_bytes(*size as f64),
             );
         }
