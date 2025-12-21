@@ -318,8 +318,7 @@ impl TryFrom<RingItem> for PhysicsItem {
                 info.coinc.extract_data(&mut cursor)?;
             } else if tag == 0xFFFF {
                 break;
-            }
-            else {
+            } else {
                 // If unknown tag, bail out
                 println!("No match found for tag: {:X}", tag);
                 cursor.set_position(cursor.position() - 2);
@@ -451,15 +450,11 @@ impl SIS3300Item {
                     };
                     // get over range flag
                     self.over_range_flag |= if self.series == 0 {
-                        (
-                            (((data1 >> 12) & 0x1) << (group*2+1))
-                            | (((data0 >> 12) & 0x1) << (group*2))
-                        ) as u8
+                        ((((data1 >> 12) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 12) & 0x1) << (group * 2))) as u8
                     } else {
-                        (
-                            (((data1 >> 14) & 0x1) << (group*2+1))
-                            | (((data0 >> 14) & 0x1) << (group*2))
-                        ) as u8
+                        ((((data1 >> 14) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 14) & 0x1) << (group * 2))) as u8
                     };
                 }
                 //Wrap back around and read the remaining data
@@ -481,15 +476,11 @@ impl SIS3300Item {
                     };
                     // get over range flag
                     self.over_range_flag |= if self.series == 0 {
-                        (
-                            (((data1 >> 12) & 0x1) << (group*2+1))
-                            | (((data0 >> 12) & 0x1) << (group*2))
-                        ) as u8
+                        ((((data1 >> 12) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 12) & 0x1) << (group * 2))) as u8
                     } else {
-                        (
-                            (((data1 >> 14) & 0x1) << (group*2+1))
-                            | (((data0 >> 14) & 0x1) << (group*2))
-                        ) as u8
+                        ((((data1 >> 14) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 14) & 0x1) << (group * 2))) as u8
                     };
                 }
             } else {
@@ -509,15 +500,11 @@ impl SIS3300Item {
                     };
                     // get over range flag
                     self.over_range_flag |= if self.series == 0 {
-                        (
-                            (((data1 >> 12) & 0x1) << (group*2+1))
-                            | (((data0 >> 12) & 0x1) << (group*2))
-                        ) as u8
+                        ((((data1 >> 12) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 12) & 0x1) << (group * 2))) as u8
                     } else {
-                        (
-                            (((data1 >> 14) & 0x1) << (group*2+1))
-                            | (((data0 >> 14) & 0x1) << (group*2))
-                        ) as u8
+                        ((((data1 >> 14) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 14) & 0x1) << (group * 2))) as u8
                     };
                 }
             }

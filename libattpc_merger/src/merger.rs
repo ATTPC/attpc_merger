@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::constants::{NUMBER_OF_ASADS, NUMBER_OF_COBOS, COBO_OF_SILICON};
+use super::constants::{COBO_OF_SILICON, NUMBER_OF_ASADS, NUMBER_OF_COBOS};
 use super::error::AsadStackError;
 
 use super::asad_stack::AsadStack;
@@ -37,7 +37,9 @@ impl Merger {
                 continue;
             }
             if config.need_copy_files() {
-                graw_dir = config.get_copy_directory(run_number)?.unwrap()
+                graw_dir = config
+                    .get_copy_directory(run_number)?
+                    .unwrap()
                     .join("graw")
                     .join(format!("mm{cobo}"));
             } else {

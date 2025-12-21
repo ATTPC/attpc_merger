@@ -337,7 +337,8 @@ impl HDFWriter {
                 .new_dataset_builder()
                 .with_data(&data_matrix)
                 .create("1903")?;
-            dataset.new_attr::<u8>()
+            dataset
+                .new_attr::<u8>()
                 .create("over_range")?
                 .write_scalar(&physics.fadc1.over_range_flag)?;
         }
@@ -361,7 +362,8 @@ impl HDFWriter {
                 .new_dataset_builder()
                 .with_data(&data_matrix)
                 .create("1904")?;
-            dataset.new_attr::<u8>()
+            dataset
+                .new_attr::<u8>()
                 .create("over_range")?
                 .write_scalar(&physics.fadc2.over_range_flag)?;
         }
@@ -385,10 +387,10 @@ impl HDFWriter {
                 .new_dataset_builder()
                 .with_data(&data_matrix)
                 .create("1905")?;
-            dataset.new_attr::<u8>()
+            dataset
+                .new_attr::<u8>()
                 .create("over_range")?
                 .write_scalar(&physics.fadc3.over_range_flag)?;
-
         }
         // write SIS3316 data if present (channel number is encoded as first element)
         if physics.fadc4.hasdata {

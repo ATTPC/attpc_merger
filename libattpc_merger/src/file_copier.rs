@@ -1,92 +1,83 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
-use super::constants::{NUMBER_OF_COBOS};
 use super::config::Config;
+use super::constants::NUMBER_OF_COBOS;
 use super::error::FileCopierError;
 
 pub struct FileCopier {
-	file_stack: Vec<(PathBuf, PathBuf, u64)>,
-	total_data_size_bytes: u64,
+    file_stack: Vec<(PathBuf, PathBuf, u64)>,
+    total_data_size_bytes: u64,
 }
-
 
 impl FileCopier {
     pub fn new(config: &Config, run_number: i32) -> Result<Self, FileCopierError> {
         if !config.need_copy_files() {
-			return Ok(Self {
-				file_stack: vec![],
-				total_data_size_bytes: 0,
-			})
-		}
-		let mut stack: Vec<(PathBuf, PathBuf, u64)> = Vec::new();
-		let total_size: u64 = 0;
-		let copy_dir = config.get_copy_directory(run_number)?.unwrap();
-		if let Ok(evt_file) = config.get_evt_directory(run_number) {
-			if let Some(evt_file) = evt_file {
-				if let Ok(file_list) = Self::get_file_stack(
-					&evt_file,
-					"run-",
-					".evt"
-				) {
-					for (path, bytes) in file_list {
-						let src = path.clone();
-						let dst = copy_dir
-							.join("evt")
-							.join(path.file_name().unwrap());
-						stack.push((src, dst, bytes));
-					}
-				}
-			}
-		}
-		for cobo in 0..NUMBER_OF_COBOS {
-			let graw_dir: PathBuf;
-			if config.online {
-				graw_dir = config.get_online_directory(run_number, &cobo)?;
-			} else {
-				graw_dir = config.get_run_directory(run_number, &cobo)?;
-			}
-			if let Ok(file_list) = Self::get_file_stack(
-				&graw_dir,
-				&format!("CoBo{}_AsAd", cobo),
-				".graw"
-			) {
-				for (path, bytes) in file_list {
-					let src = path.clone();
-					let dst = copy_dir
-						.join(format!("mm{cobo}"))
-						.join(path.file_name().unwrap());
-					stack.push((src, dst, bytes));
-				}
-			}
-		}
-		Ok(Self {
-			file_stack: stack,
-			total_data_size_bytes: total_size,
-		})
+            return Ok(Self {
+                file_stack: vec![],
+                total_data_size_bytes: 0,
+            });
+        }
+        let mut stack: Vec<(PathBuf, PathBuf, u64)> = Vec::new();
+        let total_size: u64 = 0;
+        let copy_dir = config.get_copy_directory(run_number)?.unwrap();
+        if let Ok(evt_file) = config.get_evt_directory(run_number) {
+            if let Some(evt_file) = evt_file {
+                if let Ok(file_list) = Self::get_file_stack(&evt_file, "run-", ".evt") {
+                    for (path, bytes) in file_list {
+                        let src = path.clone();
+                        let dst = copy_dir.join("evt").join(path.file_name().unwrap());
+                        stack.push((src, dst, bytes));
+                    }
+                }
+            }
+        }
+        for cobo in 0..NUMBER_OF_COBOS {
+            let graw_dir: PathBuf;
+            if config.online {
+                graw_dir = config.get_online_directory(run_number, &cobo)?;
+            } else {
+                graw_dir = config.get_run_directory(run_number, &cobo)?;
+            }
+            if let Ok(file_list) =
+                Self::get_file_stack(&graw_dir, &format!("CoBo{}_AsAd", cobo), ".graw")
+            {
+                for (path, bytes) in file_list {
+                    let src = path.clone();
+                    let dst = copy_dir
+                        .join(format!("mm{cobo}"))
+                        .join(path.file_name().unwrap());
+                    stack.push((src, dst, bytes));
+                }
+            }
+        }
+        Ok(Self {
+            file_stack: stack,
+            total_data_size_bytes: total_size,
+        })
     }
 
-	fn get_file_stack(
-		parent_path: &Path,
-		start_pattern: &str,
-		end_pattern: &str,
-	) -> Result<Vec<(PathBuf, u64)>, FileCopierError> {
-		let mut file_list: Vec<(PathBuf, u64)> = Vec::new();
-		for item in parent_path.read_dir()? {
-			let item_path = item?.path();
-			let item_path_str = item_path.to_str().unwrap();
-			if item_path_str.contains(start_pattern) && item_path_str.contains(end_pattern) {
-				let bytes = item_path.metadata().unwrap().len();
-				file_list.push((item_path, bytes));
-			}
-		}
-		Ok(file_list)
-	}
+    fn get_file_stack(
+        parent_path: &Path,
+        start_pattern: &str,
+        end_pattern: &str,
+    ) -> Result<Vec<(PathBuf, u64)>, FileCopierError> {
+        let mut file_list: Vec<(PathBuf, u64)> = Vec::new();
+        for item in parent_path.read_dir()? {
+            let item_path = item?.path();
+            let item_path_str = item_path.to_str().unwrap();
+            if item_path_str.contains(start_pattern) && item_path_str.contains(end_pattern) {
+                let bytes = item_path.metadata().unwrap().len();
+                file_list.push((item_path, bytes));
+            }
+        }
+        Ok(file_list)
+    }
 
-	pub fn get_total_data_size(&self) -> u64 {
-		self.total_data_size_bytes
-	}
+    pub fn get_total_data_size(&self) -> u64 {
+        self.total_data_size_bytes
+    }
 
-	pub fn copy_meta(&self) -> &Vec<(PathBuf, PathBuf, u64)> {
-		&self.file_stack
-	}
+    pub fn copy_meta(&self) -> &Vec<(PathBuf, PathBuf, u64)> {
+        &self.file_stack
+    }
 }

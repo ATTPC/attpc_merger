@@ -212,8 +212,7 @@ fn main() {
             };
             let template_str = format!(
                 "{{msg}} - {{ellapsed_precise}}, {{bar:40.{}/{}}} {{percent}}%",
-                filled_color,
-                blank_color,
+                filled_color, blank_color,
             );
             let message = match status.color {
                 BarColor::CYAN => "Merging",
@@ -226,9 +225,7 @@ fn main() {
             bar.set_position((status.progress * 100.0) as u64);
             bar.set_message(format!(
                 "Worker {}: {} run {}",
-                status.worker_id,
-                message,
-                status.run_number,
+                status.worker_id, message, status.run_number,
             ));
         }
 

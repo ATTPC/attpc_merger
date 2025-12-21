@@ -5,10 +5,10 @@ use std::sync::mpsc::Sender;
 use super::channel_map::GetChannelMap;
 use super::config::Config;
 use super::constants::SIZE_UNIT;
-use super::error::{ProcessorError, FribBuilderError};
-use super::frib_builder::FribBuilder;
+use super::error::{FribBuilderError, ProcessorError};
 use super::event_builder::EventBuilder;
 use super::file_copier::FileCopier;
+use super::frib_builder::FribBuilder;
 use super::hdf_writer::HDFWriter;
 use super::merger::Merger;
 use super::worker_status::{BarColor, WorkerStatus};
@@ -108,7 +108,7 @@ pub fn process_run(
                     copy_progress,
                     run_number,
                     *worker_id,
-                    BarColor::GREEN
+                    BarColor::GREEN,
                 ))?;
             }
         }
@@ -117,7 +117,7 @@ pub fn process_run(
             1.0,
             run_number,
             *worker_id,
-            BarColor::GREEN
+            BarColor::GREEN,
         ))?;
         // delete file
     }
@@ -154,7 +154,6 @@ pub fn process_run(
         }
     }
 
-
     let mut merger = Merger::new(config, run_number)?;
     spdlog::info!(
         "Total run size: {}",
@@ -184,7 +183,12 @@ pub fn process_run(
             if count > flush_val {
                 count = 0;
                 progress += flush_frac;
-                tx.send(WorkerStatus::new(progress, run_number, *worker_id, BarColor::CYAN))?;
+                tx.send(WorkerStatus::new(
+                    progress,
+                    run_number,
+                    *worker_id,
+                    BarColor::CYAN,
+                ))?;
             }
 
             if let Some(event) = evb.append_frame(frame)? {
@@ -200,7 +204,12 @@ pub fn process_run(
         }
     }
 
-    tx.send(WorkerStatus::new(1.0, run_number, *worker_id, BarColor::CYAN))?;
+    tx.send(WorkerStatus::new(
+        1.0,
+        run_number,
+        *worker_id,
+        BarColor::CYAN,
+    ))?;
     spdlog::info!("Done with get data.");
 
     if config.delete_copied_files() {

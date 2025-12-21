@@ -97,7 +97,11 @@ impl Config {
         if self.evt_path.is_none() {
             return Ok(None);
         }
-        let run_dir: PathBuf = self.evt_path.as_ref().unwrap().join(format!("run{run_number}"));
+        let run_dir: PathBuf = self
+            .evt_path
+            .as_ref()
+            .unwrap()
+            .join(format!("run{run_number}"));
         if run_dir.exists() {
             Ok(Some(run_dir))
         } else {
@@ -122,7 +126,11 @@ impl Config {
         if self.copy_path.is_none() {
             return Ok(None);
         }
-        let run_dir: PathBuf = self.copy_path.as_ref().unwrap().join(format!("run_{run_number}"));
+        let run_dir: PathBuf = self
+            .copy_path
+            .as_ref()
+            .unwrap()
+            .join(format!("run_{run_number}"));
         Ok(Some(run_dir))
     }
 
@@ -140,6 +148,6 @@ impl Config {
     }
 
     pub fn delete_copied_files(&self) -> bool {
-        self.need_copy_files() &&  self.delete_copied
+        self.need_copy_files() && self.delete_copied
     }
 }

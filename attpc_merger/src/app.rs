@@ -72,9 +72,8 @@ impl MergerApp {
                 } else {
                     BarColor::CYAN
                 };
-                self.worker_statuses.push(
-                    WorkerStatus::new(0.0, 0, idx, bar_color)
-                );
+                self.worker_statuses
+                    .push(WorkerStatus::new(0.0, 0, idx, bar_color));
                 self.workers.push(std::thread::spawn(move || {
                     process_subset(conf, tx, idx, subset)
                 }))
@@ -232,7 +231,11 @@ impl eframe::App for MergerApp {
                 //EVT directory
                 ui.label(format!(
                     "EVT directory: {}",
-                    self.config.evt_path.clone().unwrap_or(PathBuf::from("None")).display()
+                    self.config
+                        .evt_path
+                        .clone()
+                        .unwrap_or(PathBuf::from("None"))
+                        .display()
                 ));
                 if ui.button("Open...").clicked() {
                     self.config.evt_path = FileDialog::new()
@@ -263,7 +266,11 @@ impl eframe::App for MergerApp {
                 // Copy file
                 ui.label(format!(
                     "Copy directory: {}",
-                    self.config.copy_path.clone().unwrap_or(PathBuf::from("None")).display()
+                    self.config
+                        .copy_path
+                        .clone()
+                        .unwrap_or(PathBuf::from("None"))
+                        .display()
                 ));
                 if ui.button("Open...").clicked() {
                     self.config.copy_path = FileDialog::new()
@@ -272,7 +279,10 @@ impl eframe::App for MergerApp {
                         )
                         .pick_folder();
                 }
-                ui.checkbox(&mut self.config.delete_copied, "Delete copied files after merging");
+                ui.checkbox(
+                    &mut self.config.delete_copied,
+                    "Delete copied files after merging",
+                );
                 ui.end_row();
 
                 //Pad map
@@ -337,23 +347,24 @@ impl eframe::App for MergerApp {
                 let msg = match status.color {
                     BarColor::GREEN => "Copying",
                     BarColor::CYAN => "Merging",
-                    _ => ""
+                    _ => "",
                 };
                 let color = match status.color {
                     BarColor::GREEN => Color32::DARK_GREEN,
                     BarColor::CYAN => Color32::BLUE,
                     BarColor::MAGENTA => Color32::MAGENTA,
-                    BarColor::RED => Color32::RED
+                    BarColor::RED => Color32::RED,
                 };
-                ui.add(ProgressBar::new(status.progress)
-                    .text(format!(
-                        "Worker {} : {} run {} - {}%",
-                        status.worker_id,
-                        msg,
-                        status.run_number,
-                        (status.progress * 100.0) as i32
-                    ))
-                    .fill(color)
+                ui.add(
+                    ProgressBar::new(status.progress)
+                        .text(format!(
+                            "Worker {} : {} run {} - {}%",
+                            status.worker_id,
+                            msg,
+                            status.run_number,
+                            (status.progress * 100.0) as i32
+                        ))
+                        .fill(color),
                 );
             }
 
