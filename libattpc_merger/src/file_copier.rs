@@ -53,7 +53,6 @@ impl FileCopier {
 				for (path, bytes) in file_list {
 					let src = path.clone();
 					let dst = copy_dir
-						.join("graw")
 						.join(format!("mm{cobo}"))
 						.join(path.file_name().unwrap());
 					stack.push((src, dst, bytes));
