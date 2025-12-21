@@ -86,9 +86,6 @@ pub fn process_run(
             human_bytes::human_bytes(total_copy_size as f64)
         );
         let mut copy_count = 0;
-        let mut copy_progress: f32 = 0.0;
-        let copy_flush_frac: f32 = 0.01;
-        let copy_flush_val = (total_copy_size as f32 * copy_flush_frac) as u64;
         // tell start
         tx.send(WorkerStatus::new(
             0.0,
@@ -101,16 +98,13 @@ pub fn process_run(
             std::fs::create_dir_all(dst.parent().unwrap())?;
             std::fs::copy(src, dst)?;
             copy_count += size;
-            if copy_count > copy_flush_val {
-                copy_count = 0;
-                copy_progress += copy_flush_frac;
-                tx.send(WorkerStatus::new(
-                    copy_progress,
-                    run_number,
-                    *worker_id,
-                    BarColor::GREEN,
-                ))?;
-            }
+            // send message whenever copied each file
+            tx.send(WorkerStatus::new(
+                copy_count as f32 / total_copy_size as f32,
+                run_number,
+                *worker_id,
+                BarColor::GREEN,
+            ))?;
             spdlog::info!(
                 "Copied {} in {}",
                 src.file_name().unwrap().to_string_lossy(),
