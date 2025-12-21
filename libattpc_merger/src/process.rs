@@ -111,6 +111,11 @@ pub fn process_run(
                     BarColor::GREEN,
                 ))?;
             }
+            spdlog::info!(
+                "Copied {} in {}",
+                src.file_name().unwrap().display(),
+                human_bytes::human_bytes(*size as f64),
+            );
         }
         // tell finish
         tx.send(WorkerStatus::new(
@@ -119,6 +124,8 @@ pub fn process_run(
             *worker_id,
             BarColor::GREEN,
         ))?;
+        spdlog::info!("Done with copying files.");
+
         // delete file
     }
 

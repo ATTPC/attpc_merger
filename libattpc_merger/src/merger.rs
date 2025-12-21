@@ -40,7 +40,6 @@ impl Merger {
                 graw_dir = config
                     .get_copy_directory(run_number)?
                     .unwrap()
-                    .join("graw")
                     .join(format!("mm{cobo}"));
             } else if config.online {
                 graw_dir = config.get_online_directory(run_number, &cobo)?;

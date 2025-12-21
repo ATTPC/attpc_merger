@@ -18,7 +18,7 @@ impl FileCopier {
             });
         }
         let mut stack: Vec<(PathBuf, PathBuf, u64)> = Vec::new();
-        let total_size: u64 = 0;
+        let mut total_size: u64 = 0;
         let copy_dir = config.get_copy_directory(run_number)?.unwrap();
         if let Ok(Some(evt_file)) = config.get_evt_directory(run_number) {
             if let Ok(file_list) = Self::get_file_stack(&evt_file, "run-", ".evt") {
@@ -26,6 +26,7 @@ impl FileCopier {
                     let src = path.clone();
                     let dst = copy_dir.join("evt").join(path.file_name().unwrap());
                     stack.push((src, dst, bytes));
+                    total_size += bytes;
                 }
             }
         }
@@ -51,6 +52,7 @@ impl FileCopier {
                         .join(format!("mm{cobo}"))
                         .join(path.file_name().unwrap());
                     stack.push((src, dst, bytes));
+                    total_size += bytes;
                 }
             }
         }
