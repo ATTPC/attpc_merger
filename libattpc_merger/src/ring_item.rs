@@ -299,13 +299,7 @@ impl TryFrom<RingItem> for PhysicsItem {
         info.timestamp = cursor.read_u32::<LittleEndian>()?;
         // Parse the stack. Order matters!
         // DB 2025-06-05 modified to loop on tags for more flexibility
-        loop {
-            let tag = match cursor.read_u16::<LittleEndian>() {
-                Ok(tag) => tag,
-                Err(_e) => break,
-            };
-            // println!("Tag found: {:X}", tag);
-
+        while let Ok(tag) = cursor.read_u16::<LittleEndian>() {
             if tag == 0x1903 {
                 info.fadc1.extract_data(&mut cursor)?;
             } else if tag == 0x1904 {
@@ -381,7 +375,7 @@ impl SIS3300Item {
             traces: vec![vec![]; 8],
             samples: 0,
             channels: 0,
-            series: series,
+            series,
             over_range_flag: 0,
             hasdata: false,
         }

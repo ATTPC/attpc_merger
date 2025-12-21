@@ -42,12 +42,10 @@ impl Merger {
                     .unwrap()
                     .join("graw")
                     .join(format!("mm{cobo}"));
+            } else if config.online {
+                graw_dir = config.get_online_directory(run_number, &cobo)?;
             } else {
-                if config.online {
-                    graw_dir = config.get_online_directory(run_number, &cobo)?;
-                } else {
-                    graw_dir = config.get_run_directory(run_number, &cobo)?;
-                }
+                graw_dir = config.get_run_directory(run_number, &cobo)?;
             }
             for asad in 0..NUMBER_OF_ASADS {
                 match AsadStack::new(&graw_dir, cobo as i32, asad as i32) {
@@ -98,15 +96,14 @@ impl Merger {
             }
         }
 
-        if earliest_event_index.is_none() {
-            //None of the remaining stacks had data for us. We've read everything.
-            Ok(None)
-        } else {
-            //This MUST happen before the retain call. The indexes will be modified.
-            let frame = self.file_stacks[earliest_event_index.unwrap().0].get_next_frame()?;
-            //Only keep stacks which still have data to be read
+        if let Some((idx, _)) = earliest_event_index {
+            // This MUST happen before the retain call. The indexes will be modified.
+            let frame = self.file_stacks[idx].get_next_frame()?;
+            // Only keep stacks which still have data to be read
             self.file_stacks.retain(|stack| stack.is_not_ended());
             Ok(Some(frame))
+        } else {
+            Ok(None)
         }
     }
 

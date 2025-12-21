@@ -20,24 +20,22 @@ impl FileCopier {
         let mut stack: Vec<(PathBuf, PathBuf, u64)> = Vec::new();
         let total_size: u64 = 0;
         let copy_dir = config.get_copy_directory(run_number)?.unwrap();
-        if let Ok(evt_file) = config.get_evt_directory(run_number) {
-            if let Some(evt_file) = evt_file {
-                if let Ok(file_list) = Self::get_file_stack(&evt_file, "run-", ".evt") {
-                    for (path, bytes) in file_list {
-                        let src = path.clone();
-                        let dst = copy_dir.join("evt").join(path.file_name().unwrap());
-                        stack.push((src, dst, bytes));
-                    }
+        if let Ok(Some(evt_file)) = config.get_evt_directory(run_number) {
+            if let Ok(file_list) = Self::get_file_stack(&evt_file, "run-", ".evt") {
+                for (path, bytes) in file_list {
+                    let src = path.clone();
+                    let dst = copy_dir.join("evt").join(path.file_name().unwrap());
+                    stack.push((src, dst, bytes));
                 }
             }
         }
+
         for cobo in 0..NUMBER_OF_COBOS {
-            let graw_dir: PathBuf;
-            if config.online {
-                graw_dir = config.get_online_directory(run_number, &cobo)?;
+            let graw_dir = if config.online {
+                config.get_online_directory(run_number, &cobo)?
             } else {
-                graw_dir = config.get_run_directory(run_number, &cobo)?;
-            }
+                config.get_run_directory(run_number, &cobo)?
+            };
             if let Ok(file_list) =
                 Self::get_file_stack(&graw_dir, &format!("CoBo{}_AsAd", cobo), ".graw")
             {

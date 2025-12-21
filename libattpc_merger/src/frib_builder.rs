@@ -12,7 +12,7 @@ pub struct FribBuilder {
 impl FribBuilder {
     pub fn new(evt_path: &Path) -> Result<Self, FribBuilderError> {
         Ok(Self {
-            evt_stack: EvtStack::new(&evt_path)?,
+            evt_stack: EvtStack::new(evt_path)?,
         })
     }
 
