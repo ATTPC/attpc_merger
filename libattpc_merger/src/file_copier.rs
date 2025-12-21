@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use super::config::Config;
-use super::constants::NUMBER_OF_COBOS;
+use super::constants::{COBO_OF_SILICON, NUMBER_OF_COBOS};
 use super::error::FileCopierError;
 
 pub struct FileCopier {
@@ -31,6 +31,12 @@ impl FileCopier {
         }
 
         for cobo in 0..NUMBER_OF_COBOS {
+            if !config.merge_atttpc && cobo < COBO_OF_SILICON {
+                continue;
+            }
+            if !config.merge_silicon && cobo >= COBO_OF_SILICON {
+                continue;
+            }
             let graw_dir = if config.online {
                 config.get_online_directory(run_number, &cobo)?
             } else {

@@ -279,10 +279,9 @@ impl eframe::App for MergerApp {
                         )
                         .pick_folder();
                 }
-                ui.checkbox(
-                    &mut self.config.delete_copied,
-                    "Delete copied files after merging",
-                );
+                ui.end_row();
+                ui.label("Delete copied files after merging");
+                ui.checkbox(&mut self.config.delete_copied, "");
                 ui.end_row();
 
                 //Pad map

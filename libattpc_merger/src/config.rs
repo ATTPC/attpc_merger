@@ -143,6 +143,10 @@ impl Config {
         self.n_threads >= 1
     }
 
+    pub fn has_evt_path(&self) -> bool {
+        self.evt_path.is_some()
+    }
+
     pub fn need_copy_files(&self) -> bool {
         self.copy_path.is_some()
     }
