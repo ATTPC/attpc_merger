@@ -324,55 +324,81 @@ impl HDFWriter {
             .create("977")?;
         // write SIS3300 data if present
         if physics.fadc1.hasdata {
+            // let mut data_matrix =
+            //     Array2::<u16>::zeros([physics.fadc1.samples, physics.fadc1.traces.len()]);
             let mut data_matrix =
-                Array2::<u16>::zeros([physics.fadc1.samples, physics.fadc1.traces.len()]);
+                Array2::<u16>::zeros([physics.fadc1.traces.len(), physics.fadc1.samples]);
             for i in 0..8 {
                 for j in 0..physics.fadc1.samples {
-                    data_matrix[[j, i]] = physics.fadc1.traces[i][j];
+                    data_matrix[[i, j]] = physics.fadc1.traces[i][j];
                 }
             }
-            physics_group
+            let dataset = physics_group
                 .new_dataset_builder()
                 .with_data(&data_matrix)
                 .create("1903")?;
+            dataset.new_attr::<u8>()
+                .create("over_range")?
+                .write_scalar(&physics.fadc1.over_range_flag)?;
         }
         // write SIS3301 data if present
         if physics.fadc2.hasdata {
+            // let mut data_matrix =
+            //     Array2::<u16>::zeros([physics.fadc2.samples, physics.fadc2.traces.len()]);
+            // for i in 0..8 {
+            //     for j in 0..physics.fadc2.samples {
+            //         data_matrix[[j, i]] = physics.fadc2.traces[i][j];
+            //     }
+            // }
             let mut data_matrix =
-                Array2::<u16>::zeros([physics.fadc2.samples, physics.fadc2.traces.len()]);
+                Array2::<u16>::zeros([physics.fadc2.traces.len(), physics.fadc2.samples]);
             for i in 0..8 {
                 for j in 0..physics.fadc2.samples {
-                    data_matrix[[j, i]] = physics.fadc2.traces[i][j];
+                    data_matrix[[i, j]] = physics.fadc2.traces[i][j];
                 }
             }
-            physics_group
+            let dataset = physics_group
                 .new_dataset_builder()
                 .with_data(&data_matrix)
                 .create("1904")?;
+            dataset.new_attr::<u8>()
+                .create("over_range")?
+                .write_scalar(&physics.fadc2.over_range_flag)?;
         }
         // write SIS3301 data if present
         if physics.fadc3.hasdata {
+            // let mut data_matrix =
+            //     Array2::<u16>::zeros([physics.fadc3.samples, physics.fadc3.traces.len()]);
+            // for i in 0..8 {
+            //     for j in 0..physics.fadc3.samples {
+            //         data_matrix[[j, i]] = physics.fadc3.traces[i][j];
+            //     }
+            // }
             let mut data_matrix =
-                Array2::<u16>::zeros([physics.fadc3.samples, physics.fadc3.traces.len()]);
+                Array2::<u16>::zeros([physics.fadc3.traces.len(), physics.fadc3.samples]);
             for i in 0..8 {
                 for j in 0..physics.fadc3.samples {
-                    data_matrix[[j, i]] = physics.fadc3.traces[i][j];
+                    data_matrix[[i, j]] = physics.fadc3.traces[i][j];
                 }
             }
-            physics_group
+            let dataset = physics_group
                 .new_dataset_builder()
                 .with_data(&data_matrix)
                 .create("1905")?;
+            dataset.new_attr::<u8>()
+                .create("over_range")?
+                .write_scalar(&physics.fadc3.over_range_flag)?;
+
         }
         // write SIS3316 data if present (channel number is encoded as first element)
         if physics.fadc4.hasdata {
             let mut data_matrix =
-                Array2::<u16>::zeros([physics.fadc4.samples + 1, physics.fadc4.channels]);
+                Array2::<u16>::zeros([physics.fadc4.channels, physics.fadc4.samples + 1]);
             let mut index = 0;
             for i in 0..16 {
                 if physics.fadc4.valid[i] {
                     for j in 0..physics.fadc4.samples + 1 {
-                        data_matrix[[j, index]] = physics.fadc4.traces[i][j];
+                        data_matrix[[index, j]] = physics.fadc4.traces[i][j];
                     }
                     index += 1;
                 }
