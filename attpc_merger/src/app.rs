@@ -349,9 +349,9 @@ impl eframe::App for MergerApp {
                     _ => "",
                 };
                 let color = match status.color {
-                    BarColor::GREEN => Color32::DARK_GREEN,
-                    BarColor::CYAN => Color32::BLUE,
-                    BarColor::MAGENTA => Color32::MAGENTA,
+                    BarColor::GREEN => Color32::from_rgb(57, 158, 90),
+                    BarColor::CYAN => Color32::from_rgb(35, 123, 160),
+                    BarColor::MAGENTA => Color32::from_rgb(184, 51, 106),
                     BarColor::RED => Color32::RED,
                 };
                 ui.add(
