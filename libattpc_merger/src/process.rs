@@ -1,7 +1,5 @@
 use std::sync::mpsc::Sender;
 
-// use super::ring_item::{BeginRunItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem};
-
 use super::channel_map::GetChannelMap;
 use super::config::Config;
 use super::constants::SIZE_UNIT;
@@ -27,47 +25,6 @@ fn flush_final_event(
     writer.close()?;
     Ok(())
 }
-
-// /// Process the evt data for this run
-// fn process_evt_data(evt_path: PathBuf, writer: &mut HDFWriter) -> Result<(), ProcessorError> {
-//     let mut evt_stack = EvtStack::new(&evt_path)?; // open evt file
-//     let mut run_info = RunInfo::new();
-//     let mut scaler_counter: u64 = 0;
-//     let mut event_counter: u64 = 0;
-//     while let Some(mut ring) = evt_stack.get_next_ring_item()? {
-//         match ring.ring_type {
-//             // process each ring depending on its type
-//             RingType::BeginRun => {
-//                 // Begin run
-//                 run_info.begin = BeginRunItem::try_from(ring)?;
-//                 spdlog::info!("Detected begin run -- {}", run_info.print_begin());
-//             }
-//             RingType::EndRun => {
-//                 // End run
-//                 run_info.end = EndRunItem::try_from(ring)?;
-//                 spdlog::info!("Detected end run -- {}", run_info.print_end());
-//                 writer.write_frib_runinfo(run_info)?;
-//                 break;
-//             }
-//             RingType::Dummy => (),
-//             RingType::Scalers => {
-//                 // Scalers
-//                 writer.write_frib_scalers(ScalersItem::try_from(ring)?, &scaler_counter)?;
-//                 scaler_counter += 1;
-//             }
-//             RingType::Physics => {
-//                 // Physics data
-//                 ring.remove_boundaries(); // physics event often cross VMUSB buffer boundary
-//                 //println!("fadc2 has {} samples", sam2);
-//                 writer.write_frib_physics(PhysicsItem::try_from(ring)?, &event_counter)?;
-//                 event_counter += 1;
-//             }
-//             RingType::Counter => (), // Unused, old that could cause many errors
-//             _ => spdlog::error!("Unrecognized ring type: {}", ring.bytes[4]),
-//         }
-//     }
-//     Ok(())
-// }
 
 /// The main loop of attpc_merger.
 ///

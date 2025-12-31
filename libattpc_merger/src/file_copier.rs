@@ -4,12 +4,16 @@ use super::config::Config;
 use super::constants::{COBO_OF_SILICON, NUMBER_OF_COBOS};
 use super::error::FileCopierError;
 
+/// FileCopier copy graw and evt files from network to local storage.
 pub struct FileCopier {
     file_stack: Vec<(PathBuf, PathBuf, u64)>,
     total_data_size_bytes: u64,
 }
 
 impl FileCopier {
+    /// Create a new FileCopier.
+    ///
+    /// Requires config file and run number. It will break if the copy directory is None.
     pub fn new(config: &Config, run_number: i32) -> Result<Self, FileCopierError> {
         if !config.need_copy_files() {
             return Ok(Self {
@@ -62,6 +66,7 @@ impl FileCopier {
         })
     }
 
+    /// Get file stack function adapted for both graw and evt file.
     fn get_file_stack(
         parent_path: &Path,
         start_pattern: &str,
@@ -79,10 +84,15 @@ impl FileCopier {
         Ok(file_list)
     }
 
+    /// Get total copy size of files.
     pub fn get_total_data_size(&self) -> u64 {
         self.total_data_size_bytes
     }
 
+    /// Get source, destination, size for copying process.
+    ///
+    /// This function retuns list of source path, destination path and size in bytes.
+    /// Usually used in loop.
     pub fn copy_meta(&self) -> &Vec<(PathBuf, PathBuf, u64)> {
         &self.file_stack
     }

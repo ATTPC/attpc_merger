@@ -5,17 +5,24 @@ use super::evt_stack::EvtStack;
 use super::hdf_writer::HDFWriter;
 use super::ring_item::{BeginRunItem, EndRunItem, PhysicsItem, RingType, RunInfo, ScalersItem};
 
+/// FribBuilder takes evt files and convert them into frib_physics events.
 pub struct FribBuilder {
     evt_stack: EvtStack,
 }
 
 impl FribBuilder {
+    /// Create a new FribBuilder.
+    ///
+    /// Requires evt file path.
     pub fn new(evt_path: &Path) -> Result<Self, FribBuilderError> {
         Ok(Self {
             evt_stack: EvtStack::new(evt_path)?,
         })
     }
 
+    /// Process all events in evt file.
+    ///
+    /// The description is on the way
     pub fn process_evt_data(&mut self, writer: &mut HDFWriter) -> Result<(), FribBuilderError> {
         let mut run_info = RunInfo::new();
         let mut scaler_counter: u64 = 0;
@@ -55,6 +62,7 @@ impl FribBuilder {
         Ok(())
     }
 
+    /// Get total size of evt files in bytes.
     pub fn get_total_data_size(&self) -> u64 {
         self.evt_stack.total_stack_size_bytes
     }
