@@ -299,13 +299,7 @@ impl TryFrom<RingItem> for PhysicsItem {
         info.timestamp = cursor.read_u32::<LittleEndian>()?;
         // Parse the stack. Order matters!
         // DB 2025-06-05 modified to loop on tags for more flexibility
-        loop {
-            let tag = match cursor.read_u16::<LittleEndian>() {
-                Ok(tag) => tag,
-                Err(_e) => break,
-            };
-            // println!("Tag found: {:X}", tag);
-            
+        while let Ok(tag) = cursor.read_u16::<LittleEndian>() {
             if tag == 0x1903 {
                 info.fadc1.extract_data(&mut cursor)?;
             } else if tag == 0x1904 {
@@ -318,8 +312,7 @@ impl TryFrom<RingItem> for PhysicsItem {
                 info.coinc.extract_data(&mut cursor)?;
             } else if tag == 0xFFFF {
                 break;
-            }
-            else {
+            } else {
                 // If unknown tag, bail out
                 println!("No match found for tag: {:X}", tag);
                 cursor.set_position(cursor.position() - 2);
@@ -350,9 +343,9 @@ impl PhysicsItem {
         PhysicsItem {
             event: 0,
             timestamp: 0,
-            fadc1: SIS3300Item::new(),
-            fadc2: SIS3300Item::new(),
-            fadc3: SIS3300Item::new(),
+            fadc1: SIS3300Item::new(0),
+            fadc2: SIS3300Item::new(1),
+            fadc3: SIS3300Item::new(1),
             fadc4: SIS3316Item::new(),
             coinc: V977Item::new(),
         }
@@ -365,21 +358,25 @@ pub struct SIS3300Item {
     pub traces: Vec<Vec<u16>>,
     pub samples: usize,
     pub channels: usize,
+    pub series: u8,
+    pub over_range_flag: u8,
     pub hasdata: bool,
 }
 
 impl Default for SIS3300Item {
     fn default() -> Self {
-        Self::new()
+        Self::new(0)
     }
 }
 
 impl SIS3300Item {
-    pub fn new() -> SIS3300Item {
+    pub fn new(series: u8) -> SIS3300Item {
         SIS3300Item {
             traces: vec![vec![]; 8],
             samples: 0,
             channels: 0,
+            series,
+            over_range_flag: 0,
             hasdata: false,
         }
     }
@@ -401,6 +398,7 @@ impl SIS3300Item {
         let mut pointer: usize;
         let mut trailer: u16;
 
+        self.over_range_flag = 0;
         //The module has four groups of channels
         for group in 0..4 {
             // if group_enable_flags & (1 >> group) == 0 {
@@ -431,22 +429,77 @@ impl SIS3300Item {
                 let inc: usize = self.samples - pointer - 2;
                 cursor.set_position(starting_position + ((istart * 4) as u64));
                 for p in 0..inc + 1 {
-                    self.traces[group * 2 + 1][p] = cursor.read_u16::<LittleEndian>()? & 0xfff;
-                    self.traces[group * 2][p] = cursor.read_u16::<LittleEndian>()? & 0xfff;
+                    // get samples
+                    let data1 = cursor.read_u16::<LittleEndian>()?;
+                    let data0 = cursor.read_u16::<LittleEndian>()?;
+                    self.traces[group * 2 + 1][p] = if self.series == 0 {
+                        data1 & 0xfff
+                    } else {
+                        data1 & 0x3fff
+                    };
+                    self.traces[group * 2][p] = if self.series == 0 {
+                        data0 & 0xfff
+                    } else {
+                        data0 & 0x3fff
+                    };
+                    // get over range flag
+                    self.over_range_flag |= if self.series == 0 {
+                        ((((data1 >> 12) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 12) & 0x1) << (group * 2))) as u8
+                    } else {
+                        ((((data1 >> 14) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 14) & 0x1) << (group * 2))) as u8
+                    };
                 }
                 //Wrap back around and read the remaining data
                 let istop: usize = self.samples - inc - 1;
                 cursor.set_position(starting_position);
                 for p in 0..istop {
-                    self.traces[group * 2 + 1][p + inc + 1] =
-                        cursor.read_u16::<LittleEndian>()? & 0xfff;
-                    self.traces[group * 2][p + inc + 1] =
-                        cursor.read_u16::<LittleEndian>()? & 0xfff;
+                    // get samples
+                    let data1 = cursor.read_u16::<LittleEndian>()?;
+                    let data0 = cursor.read_u16::<LittleEndian>()?;
+                    self.traces[group * 2 + 1][p + inc + 1] = if self.series == 0 {
+                        data1 & 0xfff
+                    } else {
+                        data1 & 0x3fff
+                    };
+                    self.traces[group * 2][p + inc + 1] = if self.series == 0 {
+                        data0 & 0xfff
+                    } else {
+                        data0 & 0x3fff
+                    };
+                    // get over range flag
+                    self.over_range_flag |= if self.series == 0 {
+                        ((((data1 >> 12) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 12) & 0x1) << (group * 2))) as u8
+                    } else {
+                        ((((data1 >> 14) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 14) & 0x1) << (group * 2))) as u8
+                    };
                 }
             } else {
                 for p in 0..self.samples {
-                    self.traces[group * 2 + 1][p] = cursor.read_u16::<LittleEndian>()? & 0xfff;
-                    self.traces[group * 2][p] = cursor.read_u16::<LittleEndian>()? & 0xfff;
+                    // get samples
+                    let data1 = cursor.read_u16::<LittleEndian>()?;
+                    let data0 = cursor.read_u16::<LittleEndian>()?;
+                    self.traces[group * 2 + 1][p] = if self.series == 0 {
+                        data1 & 0xfff
+                    } else {
+                        data1 & 0x3fff
+                    };
+                    self.traces[group * 2][p] = if self.series == 0 {
+                        data0 & 0xfff
+                    } else {
+                        data0 & 0x3fff
+                    };
+                    // get over range flag
+                    self.over_range_flag |= if self.series == 0 {
+                        ((((data1 >> 12) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 12) & 0x1) << (group * 2))) as u8
+                    } else {
+                        ((((data1 >> 14) & 0x1) << (group * 2 + 1))
+                            | (((data0 >> 14) & 0x1) << (group * 2))) as u8
+                    };
                 }
             }
             cursor.set_position(starting_position + ((self.samples * 4) as u64));

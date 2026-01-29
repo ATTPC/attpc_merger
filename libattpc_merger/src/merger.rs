@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::constants::{NUMBER_OF_ASADS, NUMBER_OF_COBOS};
+use super::constants::{COBO_OF_SILICON, NUMBER_OF_ASADS, NUMBER_OF_COBOS};
 use super::error::AsadStackError;
 
 use super::asad_stack::AsadStack;
@@ -30,7 +30,18 @@ impl Merger {
         //For every asad in every cobo, attempt to make a stack
         let mut graw_dir: PathBuf;
         for cobo in 0..NUMBER_OF_COBOS {
-            if config.online {
+            if !config.merge_atttpc && cobo < COBO_OF_SILICON {
+                continue;
+            }
+            if !config.merge_silicon && cobo >= COBO_OF_SILICON {
+                continue;
+            }
+            if config.need_copy_files() {
+                graw_dir = config
+                    .get_copy_directory(run_number)?
+                    .unwrap()
+                    .join(format!("mm{cobo}"));
+            } else if config.online {
                 graw_dir = config.get_online_directory(run_number, &cobo)?;
             } else {
                 graw_dir = config.get_run_directory(run_number, &cobo)?;
@@ -84,15 +95,14 @@ impl Merger {
             }
         }
 
-        if earliest_event_index.is_none() {
-            //None of the remaining stacks had data for us. We've read everything.
-            Ok(None)
-        } else {
-            //This MUST happen before the retain call. The indexes will be modified.
-            let frame = self.file_stacks[earliest_event_index.unwrap().0].get_next_frame()?;
-            //Only keep stacks which still have data to be read
+        if let Some((idx, _)) = earliest_event_index {
+            // This MUST happen before the retain call. The indexes will be modified.
+            let frame = self.file_stacks[idx].get_next_frame()?;
+            // Only keep stacks which still have data to be read
             self.file_stacks.retain(|stack| stack.is_not_ended());
             Ok(Some(frame))
+        } else {
+            Ok(None)
         }
     }
 

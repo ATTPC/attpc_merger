@@ -154,7 +154,33 @@ pub enum ConfigError {
 }
 
 #[derive(Debug, Error)]
+pub enum FileCopierError {
+    #[error("FileCopier failed due to IO error: {0}")]
+    IOError(#[from] std::io::Error),
+    #[error("FileCopier failed to find any matching files in the Evt directory")]
+    NoMatchingFiles,
+    #[error("FileCopier failed due to configuration error: {0}")]
+    ConfigError(#[from] ConfigError),
+}
+
+#[derive(Debug, Error)]
+pub enum FribBuilderError {
+    #[error("FribBuilder failed due to evt_path is none")]
+    NoneEvtPathError,
+    #[error("FribBuilder failed due to EvtStack error: {0}")]
+    EvtError(#[from] EvtStackError),
+    #[error("FribBuilder failed due to EvtItem error: {0}")]
+    BadRingConversion(#[from] EvtItemError),
+    #[error("FribBuilder failed due to Config error: {0}")]
+    ConfigError(#[from] ConfigError),
+    #[error("FribBuilder failed due to HDF5Writer error: {0}")]
+    HDFError(#[from] HDF5WriterError),
+}
+
+#[derive(Debug, Error)]
 pub enum ProcessorError {
+    #[error("Processor failed due to FileCopier error: {0}")]
+    FileCopier(#[from] FileCopierError),
     #[error("Processor failed due to EventBuilder error: {0}")]
     EVBError(#[from] EventBuilderError),
     #[error("Processor failed due to Merger error: {0}")]
@@ -165,10 +191,10 @@ pub enum ProcessorError {
     ConfigError(#[from] ConfigError),
     #[error("Processor failed due to GetChannelMap error: {0}")]
     MapError(#[from] GetChannelMapError),
-    #[error("Processor failed due to EvtStack error: {0}")]
-    EvtError(#[from] EvtStackError),
-    #[error("Processor failed due to EvtItem error: {0}")]
-    BadRingConversion(#[from] EvtItemError),
+    #[error("Processor failed due to FribBuilder error: {0}")]
+    FribBuilderError(#[from] FribBuilderError),
     #[error("Processor failed due to Send error: {0}")]
     SendError(#[from] std::sync::mpsc::SendError<WorkerStatus>),
+    #[error("Processor failed due to IO error: {0}")]
+    IoError(#[from] std::io::Error),
 }

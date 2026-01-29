@@ -175,6 +175,8 @@ pub mod event;
 pub mod event_builder;
 pub mod evt_file;
 pub mod evt_stack;
+pub mod file_copier;
+pub mod frib_builder;
 pub mod graw_file;
 pub mod graw_frame;
 pub mod hardware_id;

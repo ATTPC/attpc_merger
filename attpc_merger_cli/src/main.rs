@@ -45,7 +45,7 @@ use std::sync::{mpsc, Arc};
 
 use libattpc_merger::config::Config;
 use libattpc_merger::process::{create_subsets, process_subset};
-use libattpc_merger::worker_status::WorkerStatus;
+use libattpc_merger::worker_status::{BarColor, WorkerStatus};
 
 fn make_template_config(path: &Path) {
     let config = Config::default();
@@ -164,7 +164,7 @@ fn main() {
             ProgressBar::new(100)
                 .with_style(
                     ProgressStyle::with_template(
-                        "[{msg} - {ellapsed_precise}] {bar:40.cyan/blue} {percent}%",
+                        "[{msg} - {ellapsed_precise}] {bar:40.green/blue} {percent}%",
                     )
                     .unwrap(),
                 )
@@ -182,21 +182,51 @@ fn main() {
     loop {
         // Ugh since we don't have a UI here, I manually sleep for ~ 1 sec before trying to update
         std::thread::sleep(std::time::Duration::from_secs(1));
-        match rx.try_recv() {
-            Ok(status) => {
-                let bar = &progress_bars[status.worker_id];
-                bar.set_position((status.progress * 100.0) as u64);
-                bar.set_message(format!(
-                    "Worker {}: Run {}",
-                    status.worker_id, status.run_number
-                ));
+
+        let mut latest_status = None;
+        loop {
+            match rx.try_recv() {
+                Ok(status) => {
+                    latest_status = Some(status);
+                }
+                Err(mpsc::TryRecvError::Empty) => break,
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    spdlog::error!("All of the communication channels were disconnected!");
+                    error_occured = true;
+                    break;
+                }
             }
-            Err(mpsc::TryRecvError::Empty) => continue,
-            Err(mpsc::TryRecvError::Disconnected) => {
-                spdlog::error!("All of the communication channels were disconnected!");
-                error_occured = true;
-                break;
-            }
+        }
+        if let Some(status) = latest_status {
+            let filled_color = match status.color {
+                BarColor::CYAN => "cyan",
+                BarColor::MAGENTA => "magenta",
+                BarColor::RED => "red",
+                BarColor::GREEN => "green",
+            };
+            let blank_color = match status.color {
+                BarColor::CYAN => "green",
+                BarColor::MAGENTA => "cyan",
+                BarColor::RED => "magenta",
+                BarColor::GREEN => "blue",
+            };
+            let template_str = format!(
+                "{{msg}} - {{ellapsed_precise}}, {{bar:40.{}/{}}} {{percent}}%",
+                filled_color, blank_color,
+            );
+            let message = match status.color {
+                BarColor::CYAN => "Merging",
+                BarColor::MAGENTA => "",
+                BarColor::RED => "",
+                BarColor::GREEN => "Copying",
+            };
+            let bar = &progress_bars[status.worker_id];
+            bar.set_style(ProgressStyle::with_template(template_str.as_str()).unwrap());
+            bar.set_position((status.progress * 100.0) as u64);
+            bar.set_message(format!(
+                "Worker {}: {} run {}",
+                status.worker_id, message, status.run_number,
+            ));
         }
 
         // Critical: We exit the run loop if all of the workers are done

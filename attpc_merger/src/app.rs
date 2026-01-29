@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::thread::JoinHandle;
 
@@ -10,7 +10,7 @@ use rfd::FileDialog;
 use libattpc_merger::config::Config;
 use libattpc_merger::error::ProcessorError;
 use libattpc_merger::process::{create_subsets, process_subset};
-use libattpc_merger::worker_status::WorkerStatus;
+use libattpc_merger::worker_status::{BarColor, WorkerStatus};
 
 fn render_error_dialog(show: &mut bool, ctx: &eframe::egui::Context) {
     eframe::egui::Window::new("Error")
@@ -67,7 +67,13 @@ impl MergerApp {
                 // Spawn it
                 let conf = self.config.clone();
                 let tx = self.worker_tx.clone();
-                self.worker_statuses.push(WorkerStatus::new(0.0, 0, idx));
+                let bar_color = if self.config.need_copy_files() {
+                    BarColor::GREEN
+                } else {
+                    BarColor::CYAN
+                };
+                self.worker_statuses
+                    .push(WorkerStatus::new(0.0, 0, idx, bar_color));
                 self.workers.push(std::thread::spawn(move || {
                     process_subset(conf, tx, idx, subset)
                 }))
@@ -218,18 +224,25 @@ impl eframe::App for MergerApp {
                     }
                     ui.end_row();
                 }
+                ui.checkbox(&mut self.config.merge_atttpc, "Merge AT-TPC data");
+                ui.checkbox(&mut self.config.merge_silicon, "Merge Silicon data");
+                ui.end_row();
 
                 //EVT directory
-                ui.label(format!("EVT directory: {}", self.config.evt_path.display()));
+                ui.label(format!(
+                    "EVT directory: {}",
+                    self.config
+                        .evt_path
+                        .clone()
+                        .unwrap_or(PathBuf::from("None"))
+                        .display()
+                ));
                 if ui.button("Open...").clicked() {
-                    if let Some(path) = FileDialog::new()
+                    self.config.evt_path = FileDialog::new()
                         .set_directory(
                             std::env::current_dir().expect("Couldn't access evt directory"),
                         )
-                        .pick_folder()
-                    {
-                        self.config.evt_path = path;
-                    }
+                        .pick_folder();
                 }
                 ui.end_row();
 
@@ -248,6 +261,27 @@ impl eframe::App for MergerApp {
                         self.config.hdf_path = path;
                     }
                 }
+                ui.end_row();
+
+                // Copy file
+                ui.label(format!(
+                    "Copy directory: {}",
+                    self.config
+                        .copy_path
+                        .clone()
+                        .unwrap_or(PathBuf::from("None"))
+                        .display()
+                ));
+                if ui.button("Open...").clicked() {
+                    self.config.copy_path = FileDialog::new()
+                        .set_directory(
+                            std::env::current_dir().expect("Couldn't access runtime directory"),
+                        )
+                        .pick_folder();
+                }
+                ui.end_row();
+                ui.label("Delete copied files after merging");
+                ui.checkbox(&mut self.config.delete_copied, "");
                 ui.end_row();
 
                 //Pad map
@@ -309,12 +343,28 @@ impl eframe::App for MergerApp {
                     .size(18.0),
             );
             for status in self.worker_statuses.iter() {
-                ui.add(ProgressBar::new(status.progress).text(format!(
-                    "Worker {} : Run {} - {}%",
-                    status.worker_id,
-                    status.run_number,
-                    (status.progress * 100.0) as i32
-                )));
+                let msg = match status.color {
+                    BarColor::GREEN => "Copying",
+                    BarColor::CYAN => "Merging",
+                    _ => "",
+                };
+                let color = match status.color {
+                    BarColor::GREEN => Color32::from_rgb(57, 158, 90),
+                    BarColor::CYAN => Color32::from_rgb(35, 123, 160),
+                    BarColor::MAGENTA => Color32::from_rgb(184, 51, 106),
+                    BarColor::RED => Color32::RED,
+                };
+                ui.add(
+                    ProgressBar::new(status.progress)
+                        .text(format!(
+                            "Worker {} : {} run {} - {}%",
+                            status.worker_id,
+                            msg,
+                            status.run_number,
+                            (status.progress * 100.0) as i32
+                        ))
+                        .fill(color),
+                );
             }
 
             ctx.request_repaint_after(std::time::Duration::from_secs(1));
