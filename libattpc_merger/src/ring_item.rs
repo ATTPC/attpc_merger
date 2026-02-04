@@ -305,7 +305,7 @@ impl TryFrom<RingItem> for PhysicsItem {
                 Err(_e) => break,
             };
             // println!("Tag found: {:X}", tag);
-            
+
             if tag == 0x1903 {
                 info.fadc1.extract_data(&mut cursor)?;
             } else if tag == 0x1904 {
@@ -316,7 +316,7 @@ impl TryFrom<RingItem> for PhysicsItem {
                 info.fadc4.extract_data(&mut cursor)?;
             } else if tag == 0x977 {
                 info.coinc.extract_data(&mut cursor)?;
-            } else if tag == 0xFFFF {
+            } else if tag == 0xFFFF { // End of event, break from loop
                 break;
             }
             else {
@@ -531,7 +531,7 @@ impl SIS3316Item {
             }
             next = cursor.read_u16::<LittleEndian>()?;
             cursor.set_position(cursor.position() - 2);
-            if next == 0xffff {
+            if next == 0xffff { // Added 0xffff terminator in readout to indicate end
                 break;
             }
             channel = ((cursor.read_u16::<LittleEndian>()?) >> 4 & 0xf) as usize;

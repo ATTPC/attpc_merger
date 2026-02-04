@@ -23,8 +23,8 @@ byteorder = "1.5.0"
 fxhash = "0.2.1"
 hdf5 = { package = "hdf5-metno", version = "0.10.1" }
 human_bytes = "0.4.3"
-ndarray = "0.16.1"
+ndarray = "0.17.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
 time = "0.3.41"
-spdlog-rs = "0.4.1"
+spdlog-rs = "0.5.1"

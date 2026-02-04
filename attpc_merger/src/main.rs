@@ -44,7 +44,7 @@ fn main() {
     let file_sink = Arc::new(
         spdlog::sink::FileSink::builder()
             .path(PathBuf::from("./attpc_merger.log"))
-            .formatter(Box::new(spdlog::formatter::PatternFormatter::new(
+            .formatter(*Box::new(spdlog::formatter::PatternFormatter::new(
                 spdlog::formatter::pattern!(
                     "[{date_short} {time_short}] - [thread: {tid}] - [{^{level}}] - {payload}{eol}"
                 ),

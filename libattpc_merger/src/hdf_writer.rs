@@ -1,5 +1,5 @@
 use hdf5::types::VarLenUnicode;
-use hdf5::File;
+use hdf5::{File};
 use ndarray::Array2;
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -43,6 +43,7 @@ pub struct HDFWriter {
     first_timestamp: u64,   // GET info
     last_timestamp: u64,    // GET info
 }
+
 // Structure
 // events - min_event, max_event, min_get_ts, max_get_ts, frib_run, frib_start, frib_stop, frib_time, version
 // |---- event_#
@@ -53,8 +54,11 @@ pub struct HDFWriter {
 // |    |    |---- si_downstream_front(dset)
 // |    |    |---- si_downstream_back(dset)
 // |    |---- frib_physics - id, timestamp
-// |    |    |---- 907(dset)
-// |    |    |---- 1903(dset)
+// |    |    |---- 907(dset) coincidence register
+// |    |    |---- 1903(dset) SIS3300 (8 channels 12 bits flash ADC)
+// |    |    |---- 1904(dset) SIS3301 (8 channels 14 bits flash ADC)
+// |    |    |---- 1905(dset) SIS3301 (8 channels 14 bits flash ADC)
+// |    |    |---- 1906(dset) SIS3316 (16 channels 16 bits flash ADC)
 // scalers - min_event, max_event
 // |---- event_#(dset) - start_offset, stop_offset, timestamp, incremental
 

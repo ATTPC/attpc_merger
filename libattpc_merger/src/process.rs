@@ -46,6 +46,8 @@ fn process_evt_data(evt_path: PathBuf, writer: &mut HDFWriter) -> Result<(), Pro
                 // End run
                 run_info.end = EndRunItem::try_from(ring)?;
                 spdlog::info!("Detected end run -- {}", run_info.print_end());
+                spdlog::info!("A total of {} physics events were written", event_counter);
+                spdlog::info!("A total of {} scaler events were written", scaler_counter);
                 writer.write_frib_runinfo(run_info)?;
                 break;
             }
