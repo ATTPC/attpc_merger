@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
-use super::constants::{NUMBER_OF_ASADS, NUMBER_OF_COBOS};
+use crate::constants::COBO_NUMBERS;
+
+use super::constants::{NUMBER_OF_ASADS};
 use super::error::AsadStackError;
 
 use super::asad_stack::AsadStack;
@@ -29,7 +31,7 @@ impl Merger {
 
         //For every asad in every cobo, attempt to make a stack
         let mut graw_dir: PathBuf;
-        for cobo in 0..NUMBER_OF_COBOS {
+        for cobo in COBO_NUMBERS {
             if config.online {
                 graw_dir = config.get_online_directory(run_number, &cobo)?;
             } else {

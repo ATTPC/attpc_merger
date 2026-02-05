@@ -10,6 +10,7 @@ pub const SIZE_OF_BITSET: usize = 72;
 
 // Electronics constants
 pub const NUMBER_OF_COBOS: u8 = 11; //total
+pub const COBO_NUMBERS: [u8; 11] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // more flexibility
 pub const COBO_WITH_TIMESTAMP: u8 = 10; // cobo with TS in sync with FRIBDAQ
 pub const NUMBER_OF_ASADS: u8 = 4; //per cobo
 pub const NUMBER_OF_AGETS: u8 = 4; // per asad
